@@ -1,0 +1,20 @@
+{
+  "summary": "Iteration 5: Verified the backend-URL fix (preview -> production default) and the Android device -> Consola ao Vivo flow on preview. Static checks: workflow YAML is valid, env CONEX_BACKEND_URL = vars.CONEX_BACKEND_URL || 'https://conex-assist-2.emergentagent.host'; build.gradle.kts default backendUrl and the csproj ConexBackendUrl default are the same production URL, and no preview URL is left in android/, windows/ or .github/. Production (read only, nothing written): /api/health returned 200 {ok:true}; the /api/socket.io polling handshake returned an engine.io '0{sid,...}' packet. Preview: an emulated Android device (register platform android, path /api/socket.io, auth {token, kind:'device'}, support:request {consent_screen:true, screen:'1080x2400', link_code:''}) passed over both the websocket transport (the Android app tries it first) and polling. The admin socket got support:request, the session showed up in GET /sessions?status=pending, take+accept worked, the device got support:assigned, session:started and webrtc:request-offer, and the session stored resolution 1080x2400 with consent.screen true. UI: logged in as test_admin; in Consola ao Vivo the new console-device-<id> appeared live without a reload about 1s after the request, header NOVOS went 1->2 and ONLINE 1->2, and the 'Novo pedido de assistência' toast showed. take-btn -> console-accept-btn turned the session 'Em curso' and NOVOS went back to 1. The device got session:started + webrtc:request-offer, and console-end-btn ended the session. The user's real emulator session 842494e9 was not touched.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": ["/app/backend/tests/test_iteration5_android_prod.py", "/app/backend/tests/seed_test_users.py", "/app/test_reports/pytest/pytest_iter5.xml"],
+  "action_items": [
+    "Tell the user to check that GitHub repo variable CONEX_BACKEND_URL (Settings > Variables) is NOT set to the preview URL: vars.CONEX_BACKEND_URL takes precedence over the new production default.",
+    "The user must rebuild and reinstall the APK and Windows app; the old APK still points to preview and will keep showing 'A aguardar técnico…' with no device on the production CRM."
+  ],
+  "critical_code_review_comments": [
+    "build.gradle.kts: System.getenv('CONEX_BACKEND_URL') ?: ... does not handle an EMPTY env var (getenv returns \"\" and not null), so BACKEND_URL would be \"\". Use ?.takeIf { it.isNotBlank() } for safety. The workflow cannot currently produce an empty value, so this is low risk.",
+    "Suggestion: show the backend host (BuildConfig.BACKEND_URL) on a small 'Sobre'/diagnostic line in the Android and Windows apps, so a wrong-environment build is easy to spot next time."
+  ],
+  "updated_files": ["/app/backend/tests/test_iteration5_android_prod.py", "/app/backend/tests/seed_test_users.py", "/app/memory/test_credentials.md (unchanged)"],
+  "success_rate": {"backend": "100% (7/7)", "frontend": "100%"},
+  "seed_data_creation": "Recreated in PREVIEW Mongo (they had been deleted): test_admin@cryptoconex-teste.pt (super_admin), test_tecnico1/2@cryptoconex-teste.pt (technician), password TestConex#2026, using backend/tests/seed_test_users.py (idempotent). Test devices TEST_Android_*/TEST_SimAndroid were created on preview; their sessions were ended. Nothing was written to production.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Run `python backend/tests/seed_test_users.py` if the TEST accounts are missing. test_iteration5_android_prod.py needs the websocket-client pip package for the websocket transport case (installed during this iteration). Production checks must stay GET-only. The preview DB has the user's real emulator device 'Android SDK built for x86_64' (session 842494e9, pending): do not delete it."
+}
