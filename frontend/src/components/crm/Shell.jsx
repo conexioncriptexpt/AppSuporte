@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Headset, MonitorSmartphone, Link2, Settings, LogOut, KeyRound, Menu, X } from "lucide-react";
+import { LayoutDashboard, Headset, MonitorSmartphone, Link2, Settings, LogOut, KeyRound, Menu, X, MonitorPlay, Users } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth, useSocketEvent } from "../../context/AuthContext";
 import { http, errMsg } from "../../lib/api";
@@ -9,12 +9,34 @@ import { Logo, LisbonClock, Credits } from "../Brand";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 
 const NAV = [
+  { to: "/crm/consola", label: "Consola ao Vivo", icon: MonitorPlay, id: "console" },
   { to: "/crm", label: "Dashboard", icon: LayoutDashboard, id: "dashboard", end: true },
   { to: "/crm/atendimentos", label: "Atendimentos", icon: Headset, id: "sessions" },
   { to: "/crm/dispositivos", label: "Dispositivos", icon: MonitorSmartphone, id: "devices" },
   { to: "/crm/links", label: "Links de Assistência", icon: Link2, id: "links" },
+  { to: "/crm/equipa", label: "Equipa", icon: Users, id: "team", admin: true },
   { to: "/crm/configuracoes", label: "Configurações", icon: Settings, id: "settings", admin: true },
 ];
+
+const Counters = () => {
+  const [d, setD] = useState(null);
+  const load = useCallback(() => { http.get("/dashboard").then((r) => setD(r.data)).catch(() => {}); }, []);
+  useEffect(() => { load(); }, [load]);
+  useSocketEvent("queue:changed", load);
+  useSocketEvent("device:online", load);
+  useSocketEvent("device:offline", load);
+  const items = [["novos", "Novos", d?.pending, "text-amber-400"], ["ativas", "Ativas", d?.active, "text-lime-400"], ["online", "Online", d?.devices_online, "text-sky-400"]];
+  return (
+    <div className="hidden items-center gap-4 md:flex">
+      {items.map(([id, l, v, c]) => (
+        <div key={id} className="text-center leading-tight">
+          <p data-testid={`header-count-${id}`} className={`font-mono text-lg font-bold ${c}`}>{v ?? 0}</p>
+          <p className="text-[9px] uppercase tracking-widest text-slate-500">{l}</p>
+        </div>
+      ))}
+    </div>
+  );
+};
 
 const ChangePassword = ({ open, onClose }) => {
   const [cur, setCur] = useState("");
@@ -94,7 +116,8 @@ export default function Shell() {
           <span data-testid="crm-realtime-status" className={`hidden items-center gap-1.5 text-xs sm:flex ${connected && socket ? "text-lime-400" : "text-amber-400"}`}>
             <span className={`h-2 w-2 rounded-full ${connected && socket ? "bg-lime-400" : "bg-amber-400"}`} /> {connected && socket ? "Tempo real ligado" : "A ligar…"}
           </span>
-          <div className="ml-auto flex items-center gap-2">
+          <div className="ml-auto flex items-center gap-4">
+            <Counters />
             <div className="hidden text-right sm:block">
               <p data-testid="crm-user-name" className="text-sm font-semibold">{user.name}</p>
               <p className="text-xs text-slate-400">{isAdmin ? "Super Admin" : "Técnico"}</p>

@@ -7,7 +7,7 @@ import { Btn, Card, StatusBadge } from "../../components/crm/ui";
 import { SidePanel } from "./ViewerSide";
 import { ControlBar } from "./ControlBar";
 
-const Stage = ({ v, zoom, control }) => {
+export const Stage = ({ v, zoom, control }) => {
   const video = useRef(null);
   const down = useRef(null);
   const lastWheel = useRef(0);

@@ -11,7 +11,8 @@ import Sessions from "./pages/crm/Sessions";
 import Viewer from "./pages/crm/Viewer";
 import Devices from "./pages/crm/Devices";
 import Links from "./pages/crm/Links";
-import Settings from "./pages/crm/Settings";
+import Settings, { Team } from "./pages/crm/Settings";
+import LiveConsole from "./pages/crm/LiveConsole";
 
 const Protected = ({ children, admin }) => {
   const { user, ready, isAdmin } = useAuth();
@@ -34,6 +35,8 @@ function App() {
             <Route index element={<Dashboard />} />
             <Route path="atendimentos" element={<Sessions />} />
             <Route path="atendimentos/:id" element={<Viewer />} />
+            <Route path="consola" element={<LiveConsole />} />
+            <Route path="equipa" element={<Protected admin><Team /></Protected>} />
             <Route path="dispositivos" element={<Devices />} />
             <Route path="links" element={<Links />} />
             <Route path="configuracoes" element={<Protected admin><Settings /></Protected>} />

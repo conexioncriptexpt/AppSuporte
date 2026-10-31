@@ -108,7 +108,7 @@ const ActivityDialog = ({ user, onClose }) => {
   );
 };
 
-const Technicians = () => {
+export const Technicians = () => {
   const [users, setUsers] = useState([]);
   const [edit, setEdit] = useState(null);
   const [pw, setPw] = useState(null);
@@ -229,17 +229,24 @@ const Audit = () => {
 export default function Settings() {
   return (
     <div>
-      <PageTitle title="Configurações" subtitle="Técnicos, permissões, sistema e auditoria" />
-      <Tabs defaultValue="techs">
+      <PageTitle title="Configurações" subtitle="Sistema, downloads, retenção e auditoria" />
+      <Tabs defaultValue="system">
         <TabsList className="mb-4 bg-[#111827]">
-          <TabsTrigger value="techs" data-testid="settings-tab-techs">Técnicos</TabsTrigger>
           <TabsTrigger value="system" data-testid="settings-tab-system">Sistema</TabsTrigger>
           <TabsTrigger value="audit" data-testid="settings-tab-audit">Auditoria</TabsTrigger>
         </TabsList>
-        <TabsContent value="techs"><Technicians /></TabsContent>
         <TabsContent value="system"><System /></TabsContent>
         <TabsContent value="audit"><Audit /></TabsContent>
       </Tabs>
+    </div>
+  );
+}
+
+export function Team() {
+  return (
+    <div>
+      <PageTitle title="Equipa" subtitle="Técnicos, permissões, palavras-passe e atividade" />
+      <Technicians />
     </div>
   );
 }
