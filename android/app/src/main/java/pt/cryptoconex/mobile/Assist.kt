@@ -91,7 +91,7 @@ object Assist {
         cap.initialize(helper, ctx, source!!.capturerObserver)
         cap.startCapture(w, h, 30)
         capturer = cap
-        track = factory!!.createVideoTrack("screen", source)
+        track = factory!!.createVideoTrack("screen", source!!)
     }
 
     private fun connectSocket() {
@@ -183,7 +183,7 @@ object Assist {
             override fun onRenegotiationNeeded() {}
         }) ?: return
         pc = conn
-        val sender = conn.addTrack(track, listOf("screen"))
+        val sender = conn.addTrack(track!!, listOf("screen"))
         val p = sender.parameters
         p.degradationPreference = RtpParameters.DegradationPreference.BALANCED
         p.encodings.firstOrNull()?.let { it.maxBitrateBps = 2_500_000; it.maxFramerate = 30 }

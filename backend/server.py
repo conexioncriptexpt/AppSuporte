@@ -10,7 +10,7 @@ from pydantic import BaseModel, EmailStr, Field
 from starlette.middleware.cors import CORSMiddleware
 
 from core import (db, client, now, iso, new_id, sha, hash_pw, verify_pw, create_access, create_device_token,
-                  decode_token, new_refresh, current_user, super_admin, audit, get_settings, download_urls,
+                  decode_token, new_refresh, current_user, super_admin, audit, get_settings, download_urls, asset_available,
                   get_ice_servers, rate_limit, client_ip, log, PUBLIC_USER, DEFAULT_SETTINGS)
 from realtime import sio, end_session, broadcast_queue, add_op, technician_state, busy_technicians, evict_user, ONLINE_DEVICES, OPEN
 
@@ -544,7 +544,9 @@ async def revoke_link(lid: str, user=Depends(current_user)):
 @api.get("/public/config")
 async def public_config(code: str = ""):
     s = await get_settings()
-    out = {"downloads": download_urls(s), "sound_enabled": s["sound_enabled"], "link": None}
+    urls = download_urls(s)
+    out = {"downloads": urls, "available": {k: await asset_available(u) for k, u in urls.items()},
+           "sound_enabled": s["sound_enabled"], "link": None}
     if code:
         link = await db.technicianLinks.find_one({"code": code}, {"_id": 0})
         valid = bool(link and not link.get("revoked") and (not link.get("expires_at") or link["expires_at"] > iso()))

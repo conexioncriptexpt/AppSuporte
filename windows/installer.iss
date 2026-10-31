@@ -11,7 +11,7 @@ AppPublisher=Crypto Conex
 DefaultDirName={autopf}\CryptoConex
 DefaultGroupName=Suporte Técnico
 OutputBaseFilename=CryptoConexSetup
-OutputDir=..\dist
+OutputDir=dist
 SetupIconFile=CryptoConexPC\app.ico
 Compression=lzma2
 SolidCompression=yes
@@ -24,7 +24,7 @@ UninstallDisplayIcon={app}\CryptoConexPC.exe
 Name: "pt"; MessagesFile: "compiler:Languages\Portuguese.isl"
 
 [Files]
-Source: "..\publish\*"; DestDir: "{app}"; Flags: recursesubdirs ignoreversion
+Source: "publish\*"; DestDir: "{app}"; Flags: recursesubdirs ignoreversion
 
 [Icons]
 Name: "{group}\Suporte Técnico"; Filename: "{app}\CryptoConexPC.exe"

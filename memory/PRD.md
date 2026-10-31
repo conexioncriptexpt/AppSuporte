@@ -22,6 +22,12 @@ Super Admin (owner), Técnico/Tutor, Cliente assistido (idoso / baixa literacia 
 - Android and Windows source code; Windows compiles with dotnet build; Android is built by the GitHub workflow (not compiled here).
 - Tested: iteration 1 (25/27 backend) → fixes → iteration 2 (34/34 backend, frontend flows 100%).
 
+## Implemented (2026-10-31, iteration 2)
+- GitHub repo conexioncriptexpt/AppSuporte set as default; download buttons point to releases/latest/download/CryptoConex.apk and CryptoConexSetup.exe.
+- Backend checks (cached 5 min) whether release files exist; the site never sends to a GitHub 404 (shows "a ser preparada").
+- One-click direct download + a 3-step install guide (Android / Windows SmartScreen).
+- Workflow: runs on every push to main + manual; backend URL defaults to the preview URL unless vars.CONEX_BACKEND_URL is set; installer paths fixed; Android minSdk 26, lint not blocking.
+
 ## Known limitations
 - Native apps not tested on physical devices; Android not compiled in this environment.
 - Android privacy overlay is also visible to the technician (Android captures overlays).

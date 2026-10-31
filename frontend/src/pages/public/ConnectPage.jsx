@@ -1,36 +1,12 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { MonitorUp, Download, ShieldCheck, Volume2, VolumeX, UserRound } from "lucide-react";
-import { toast } from "sonner";
+import { MonitorUp, ShieldCheck, Volume2, VolumeX, UserRound } from "lucide-react";
 import { API } from "../../lib/api";
 import { detectOS } from "../../lib/format";
 import { Logo } from "../../components/Brand";
 import { useAssist } from "./useAssist";
 import { ActivePanel, PrivacyOverlay } from "./ActivePanel";
-
-const DownloadButton = ({ os, downloads }) => {
-  const target = os === "android" ? "android" : os === "windows" ? "windows" : null;
-  const go = (k) => {
-    const url = downloads?.[k];
-    if (!url) { toast.info("A aplicação estará disponível em breve. Usa o botão CONECTAR."); return; }
-    window.location.href = url;
-  };
-  const cls = "w-full rounded-2xl border-2 border-slate-600 bg-transparent px-6 py-4 text-lg font-bold text-white transition-colors hover:border-lime-400 hover:text-lime-300 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-lime-500/40";
-  if (target) {
-    return (
-      <button data-testid="public-download-btn" onClick={() => go(target)} className={cls}>
-        <Download className="mr-2 inline h-5 w-5" aria-hidden /> DESCARREGAR APLICAÇÃO
-        <span className="block text-sm font-medium text-slate-400">{target === "android" ? "Para Android (APK)" : "Para Windows (instalador)"}</span>
-      </button>
-    );
-  }
-  return (
-    <div className="grid grid-cols-2 gap-3">
-      <button data-testid="public-download-android-btn" onClick={() => go("android")} className={cls}><Download className="mr-1 inline h-5 w-5" aria-hidden /> Android</button>
-      <button data-testid="public-download-windows-btn" onClick={() => go("windows")} className={cls}><Download className="mr-1 inline h-5 w-5" aria-hidden /> Windows</button>
-    </div>
-  );
-};
+import { DownloadButton } from "./DownloadButton";
 
 export default function ConnectPage() {
   const { code } = useParams();
@@ -83,7 +59,7 @@ export default function ConnectPage() {
               </p>
             )}
 
-            <div className="mx-auto mt-5 max-w-sm"><DownloadButton os={os} downloads={cfg?.downloads} /></div>
+            <div className="mx-auto mt-5 max-w-sm"><DownloadButton os={os} cfg={cfg} /></div>
 
             <p data-testid="public-privacy-note" className="mx-auto mt-6 flex max-w-sm items-start gap-2 text-left text-sm text-slate-400">
               <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-lime-400" aria-hidden />

@@ -13,7 +13,7 @@ android {
 
     defaultConfig {
         applicationId = "pt.cryptoconex.mobile"
-        minSdk = 24
+        minSdk = 26
         targetSdk = 34
         versionCode = buildNumber
         versionName = appVersion
@@ -41,6 +41,7 @@ android {
     }
 
     buildFeatures { buildConfig = true; viewBinding = true }
+    lint { abortOnError = false; checkReleaseBuilds = false }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17

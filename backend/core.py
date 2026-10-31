@@ -31,7 +31,7 @@ DEFAULT_SETTINGS = {
     "retention_days": 180,
     "default_link_days": 30,
     "sound_enabled": True,
-    "github_repo": "",
+    "github_repo": "conexioncriptexpt/AppSuporte",
     "android_download_url": "",
     "windows_download_url": "",
 }
@@ -134,6 +134,28 @@ def download_urls(s: dict) -> dict:
         "android": s.get("android_download_url") or (f"{base}/CryptoConex.apk" if base else ""),
         "windows": s.get("windows_download_url") or (f"{base}/CryptoConexSetup.exe" if base else ""),
     }
+
+
+_assets = {}
+
+
+def _head_ok(url: str) -> bool:
+    try:
+        return requests.head(url, allow_redirects=True, timeout=6).status_code == 200
+    except requests.RequestException:
+        return False
+
+
+async def asset_available(url: str) -> bool:
+    """Checks (cached 5 min) whether a release file exists, so the site never sends users to a 404."""
+    if not url:
+        return False
+    hit = _assets.get(url)
+    if hit and (now() - hit[1]).total_seconds() < 300:
+        return hit[0]
+    ok = await asyncio.to_thread(_head_ok, url)
+    _assets[url] = (ok, now())
+    return ok
 
 
 def _metered_credentials():
