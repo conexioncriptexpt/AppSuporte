@@ -63,19 +63,19 @@ const TechPicker = ({ open, onClose, onPick, title }) => {
   );
 };
 
-export const SessionActions = ({ s, onDone, compact }) => {
+export const SessionActions = ({ s, onDone, compact, onTaken }) => {
   const { user, isAdmin } = useAuth();
   const nav = useNavigate();
   const [pick, setPick] = useState(null);
   const act = async (path, body, msg) => {
-    try { await http.post(`/sessions/${s.id}/${path}`, body); toast.success(msg); onDone?.(); } catch (e) { toast.error(errMsg(e)); }
+    try { await http.post(`/sessions/${s.id}/${path}`, body); toast.success(msg); onDone?.(); return true; } catch (e) { toast.error(errMsg(e)); return false; }
   };
   const mine = s.technician_id === user.id;
   return (
     <div className="flex flex-wrap items-center gap-2">
       {s.status === "pending" && isAdmin && <Btn data-testid={`assign-btn-${s.id}`} onClick={() => setPick("assign")}>Atribuir</Btn>}
       {s.status === "pending" && (isAdmin || s.target_technician_id === user.id) && (
-        <Btn data-testid={`take-btn-${s.id}`} variant={isAdmin ? "ghost" : "primary"} onClick={async () => { await act("take", {}, "Atendimento atribuído a si"); nav(`/crm/atendimentos/${s.id}`); }}>Atender eu</Btn>
+        <Btn data-testid={`take-btn-${s.id}`} variant={isAdmin ? "ghost" : "primary"} onClick={async () => { const ok = await act("take", {}, "Atendimento atribuído a si"); if (!ok) return; if (onTaken) onTaken(s.id); else nav(`/crm/atendimentos/${s.id}`); }}>Atender eu</Btn>
       )}
       {(mine || isAdmin) && ["assigned", "active"].includes(s.status) && (
         <Btn data-testid={`open-btn-${s.id}`} onClick={() => nav(`/crm/atendimentos/${s.id}`)}>Abrir</Btn>

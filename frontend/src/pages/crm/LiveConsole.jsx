@@ -9,7 +9,7 @@ import { Stage } from "./Viewer";
 import { ConsolePanel } from "./ConsolePanel";
 
 const DeviceList = ({ items, selected, onSelect, reload }) => (
-  <Card className="flex min-h-[70vh] flex-col p-4">
+  <Card className="flex flex-col p-4 xl:min-h-[70vh]">
     <div className="mb-3 flex items-center gap-2">
       <Radio className="h-4 w-4 text-lime-400" />
       <h2 className="font-semibold">Aparelhos ligados</h2>
@@ -28,7 +28,7 @@ const DeviceList = ({ items, selected, onSelect, reload }) => (
             </div>
             <p className="mt-1 text-xs text-slate-400">{PLATFORM_LABEL[s.platform]} · {since(s.created_at)}{s.technician_name ? ` · ${s.technician_name}` : ""}</p>
           </button>
-          {selected === s.id && s.status === "pending" && <div className="mt-2"><SessionActions s={s} onDone={reload} compact /></div>}
+          {selected === s.id && s.status === "pending" && <div className="mt-2"><SessionActions s={s} onDone={reload} onTaken={onSelect} compact /></div>}
         </li>
       ))}
     </ul>

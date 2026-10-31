@@ -312,6 +312,7 @@ def scope_for(user):
 @api.get("/dashboard")
 async def dashboard(user=Depends(current_user)):
     await cleanup_retention()
+    await end_stale_sessions()
     sc = scope_for(user)
     dev_q = {} if user["role"] == "super_admin" else {"id": {"$in": await db.sessions.distinct("device_id", {"technician_id": user["id"]})}}
     busy = await busy_technicians()
@@ -355,8 +356,18 @@ async def cleanup_retention():
 
 
 # ---------- sessions / queue ----------
+async def end_stale_sessions():
+    """Ends open sessions whose device has been offline for more than 10 minutes."""
+    cutoff = iso(now() - timedelta(minutes=10))
+    stale = await db.devices.distinct("id", {"online": False, "last_seen": {"$lt": cutoff}})
+    async for s in db.sessions.find({"status": {"$in": OPEN}, "device_id": {"$in": stale}}, {"_id": 0, "id": 1, "device_id": 1}):
+        if s["device_id"] not in ONLINE_DEVICES:
+            await end_session(s["id"], "sistema (cliente desligado)")
+
+
 @api.get("/sessions")
 async def list_sessions(scope: str = "active", user=Depends(current_user)):
+    await end_stale_sessions()
     sc = scope_for(user)
     statuses = ["ended"] if scope == "history" else OPEN
     sort = ("ended_at" if scope == "history" else "created_at", -1 if scope == "history" else 1)

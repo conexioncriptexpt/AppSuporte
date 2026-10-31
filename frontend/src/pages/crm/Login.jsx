@@ -15,7 +15,7 @@ export default function Login() {
   const [forgot, setForgot] = useState(false);
   const [err, setErr] = useState("");
 
-  if (ready && user) return <Navigate to="/crm" replace />;
+  if (ready && user) return <Navigate to="/crm/consola" replace />;
 
   const submit = async (e) => {
     e.preventDefault();
@@ -27,7 +27,7 @@ export default function Login() {
         setForgot(false);
       } else {
         await login(email.trim(), password);
-        nav("/crm");
+        nav("/crm/consola");
       }
     } catch (e2) { setErr(errMsg(e2)); } finally { setBusy(false); }
   };

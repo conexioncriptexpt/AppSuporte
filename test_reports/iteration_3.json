@@ -1,0 +1,41 @@
+{
+  "summary": "Iteration 3 tested the Live Console, header counters, Equipa, Configurações and the download toast, plus regressions. Backend: the full pytest suite passes 37/37 (including the new test_iteration3_console.py). In one parallel run my new test had a race on the shared 'active' counter. I fixed the test, and it now passes serially. Frontend (Playwright, fake getDisplayMedia and a simulated python-socketio android device) works: sidebar order is correct; counters NOVOS/ATIVAS/ONLINE update live (0/0/0 -> 1/0/1 on CONECTAR -> 1/1/1 after accept); console-empty and console-placeholder texts are correct; the pending device appears instantly with Atribuir/Atender eu/Descartar; accept shows a 1280x720 video at 10 fps with rtc 'connected'; nav buttons are disabled for browser clients ('Ligado pelo navegador: só visualização'). For the android sim, all 9 nav buttons and text-send reach the device with the correct payloads: X=270,Y=600 at 1080x2400 gives tap x=0.25,y=0.25; up/down are scroll dy -1/1; long is right_click; left/right are swipes; recents and text work. Privacy on shows public-privacy-overlay and off removes it; the guided message reaches the client chat; the Logs tab lists commands and messages; the A11y tab renders; end removes the device from the list. Equipa create/edit/password/activity/delete all work. Technicians are redirected away from /crm/equipa and /crm/configuracoes. Configurações has only the Sistema and Auditoria tabs, with the repo and URLs shown. The public download button shows the 'A aplicação está a ser preparada' toast and stays on the page. Dashboard, Atendimentos, Dispositivos, Links and Viewer still render. TWO SPEC DEVIATIONS: (1) login lands on /crm (Dashboard), not /crm/consola; (2) 'Atender eu' inside the console navigates away to /crm/atendimentos/<id>.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "GET /api/sessions?scope=active and /api/dashboard", "issue": "Sessions whose device went offline (client closed the tab) stay 'assigned' or 'active' forever. They keep appearing in 'Aparelhos ligados' (grey dot) and are counted in NOVOS/ATIVAS, and the admin shows as 'Ocupado'. Consider auto-ending or expiring them after N minutes offline, or hiding offline ones from the console list."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "Login.jsx", "issue": "After login the app navigates to '/crm' (Dashboard) instead of '/crm/consola'. Both nav('/crm') on line 30 and <Navigate to='/crm'> on line 18 need to point to '/crm/consola'. The App.js index route is also Dashboard.", "selector": "[data-testid='crm-login-submit-btn']", "priority": "HIGH"},
+      {"component": "SessionActions (components/crm/ui.jsx line 78) used in LiveConsole", "issue": "'Atender eu' in the console always calls nav(`/crm/atendimentos/${id}`), so the user leaves the Consola ao Vivo. To use console-accept-btn they must go back to the Consola and select the device again. Add a prop (e.g. stayOnTake or onTaken) so the console keeps the selection, then shows Aceitar/Rejeitar in the centre. Also, nav() runs even when the take request failed.", "selector": "[data-testid='take-btn-<sid>']", "priority": "HIGH"}
+    ],
+    "integration_issues": [
+      {"flow": "Client name", "issue": "Carried over: ConnectPage calls a.start(\"\"), so browser clients show as 'Linux · Chrome' and Viewer shows 'Cliente: Não indicado'.", "affected_selectors": ["public-connect-btn"]}
+    ],
+    "design_issues": [
+      {"screen": "Consola ao Vivo (mobile 390px)", "issues": ["The device list card has min-h-[70vh] even when empty, so the viewer is pushed far below the fold. Header counters are hidden below the md breakpoint."]},
+      {"screen": "Consola ao Vivo", "issues": ["Before a session is selected, the coordinates label shows the default 1080x1920, which can be misleading."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_iteration3_console.py", "/app/backend/tests/sim_android_device.py", "/app/backend/tests/test_realtime.py", "/app/backend/tests/test_api.py", "/app/backend/tests/test_iteration2_fixes.py", "/app/test_reports/pytest/pytest_results_it3.xml"],
+  "action_items": [
+    "Make the post-login landing /crm/consola (Login.jsx nav + Navigate; optionally the index route).",
+    "In LiveConsole, 'Atender eu' must stay on the console, keep the device selected and show console-accept-btn. Do not navigate when the take request fails.",
+    "Optional: handle stale sessions whose devices are offline in the console list and counters.",
+    "Optional: client name input on the public page."
+  ],
+  "critical_code_review_comments": [
+    "SessionActions 'take' navigates unconditionally after act(), which swallows errors, so the user is sent to the Viewer even on failure.",
+    "LiveConsole reloads the whole session list on every queue:changed, device:online and device:offline event. This is fine at the current scale.",
+    "Counters re-fetch the full /dashboard (including 7 count queries for the chart and cleanup_retention) on every socket event. Consider a light /counters endpoint, because cleanup_retention runs on every header refresh."
+  ],
+  "updated_files": ["/app/backend/tests/test_iteration3_console.py (new)", "/app/backend/tests/sim_android_device.py (new helper, not a test)", "/app/memory/test_credentials.md (added test accounts)"],
+  "success_rate": {"backend": "100% (37/37)", "frontend": "~90% (2 spec deviations: login landing, Atender eu navigation)"},
+  "test_credentials": "test_admin@cryptoconex-teste.pt / TestConex#2026 (super admin). I recreated the technicians test_tecnico1@ and test_tecnico2@cryptoconex-teste.pt / TestConex#2026 via POST /api/users because they did not exist. They are recorded in /app/memory/test_credentials.md.",
+  "seed_data_creation": "T1 and T2 technicians were created. TEST_tecnico3 was created and deleted via the UI. The test sessions were ended and the TEST_ devices deleted.",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Login selectors: crm-login-email-input, crm-login-password-input, crm-login-submit-btn. Console flow: crm-nav-console -> console-device-<sid> -> take-btn-<sid> (currently navigates to the Viewer, so go back to the console and reselect) -> console-accept-btn. For android control from the UI, run `python /app/backend/tests/sim_android_device.py 280 &`. It prints the session_id to /tmp/sim_dev.log, auto-consents control on session:started, and logs every received remote:command. Run the full suite with `cd /app/backend/tests && python -m pytest -q` (~3 min). The full suite is mostly sequential across 2 workers, so absolute counter assertions are racy."
+}
