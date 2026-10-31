@@ -12,7 +12,7 @@ from starlette.middleware.cors import CORSMiddleware
 from core import (db, client, now, iso, new_id, sha, hash_pw, verify_pw, create_access, create_device_token,
                   decode_token, new_refresh, current_user, super_admin, audit, get_settings, download_urls,
                   get_ice_servers, rate_limit, client_ip, log, PUBLIC_USER, DEFAULT_SETTINGS)
-from realtime import sio, end_session, broadcast_queue, add_op, technician_state, busy_technicians, ONLINE_DEVICES, OPEN
+from realtime import sio, end_session, broadcast_queue, add_op, technician_state, busy_technicians, evict_user, ONLINE_DEVICES, OPEN
 
 LISBON = ZoneInfo("Europe/Lisbon")
 fastapi_app = FastAPI(title="Crypto Conex API")
@@ -87,7 +87,7 @@ class AssignIn(BaseModel):
 
 class LinkCreate(BaseModel):
     technician_id: Optional[str] = None
-    days: Optional[int] = Field(None, ge=1, le=365)
+    days: Optional[int] = Field(None, ge=0, le=365)
 
 
 class SettingsIn(BaseModel):
@@ -103,8 +103,9 @@ class SettingsIn(BaseModel):
 @api.post("/auth/login")
 async def login(body: LoginIn, request: Request):
     ip = client_ip(request)
-    rate_limit(f"login:{ip}", 20, 300)
     email = body.email.lower()
+    rate_limit(f"login:{ip}", 60, 300)
+    rate_limit(f"login:{ip}:{email}", 10, 300)
     att = await db.login_attempts.find_one({"email": email}, {"_id": 0})
     if att and att.get("locked_until") and att["locked_until"] > iso():
         raise HTTPException(429, "Conta temporariamente bloqueada após várias tentativas. Tente dentro de 15 minutos.")
@@ -128,10 +129,13 @@ async def login(body: LoginIn, request: Request):
 
 @api.post("/auth/refresh")
 async def refresh(body: RefreshIn):
-    doc = await db.refresh_tokens.find_one({"token_hash": sha(body.refresh_token)}, {"_id": 0})
+    h = sha(body.refresh_token)
+    doc = await db.refresh_tokens.find_one_and_update({"token_hash": h, "revoked": False}, {"$set": {"revoked": True}},
+                                                      projection={"_id": 0})
     if not doc:
-        raise HTTPException(401, "Sessão inválida")
-    if doc["revoked"]:
+        doc = await db.refresh_tokens.find_one({"token_hash": h}, {"_id": 0})
+        if not doc:
+            raise HTTPException(401, "Sessão inválida")
         await db.refresh_tokens.update_many({"family": doc["family"]}, {"$set": {"revoked": True}})
         await audit(doc["user_id"], "auth.refresh_reuse_detected")
         raise HTTPException(401, "Sessão revogada")
@@ -140,7 +144,6 @@ async def refresh(body: RefreshIn):
     user = await db.users.find_one({"id": doc["user_id"]}, {"_id": 0, "password_hash": 0})
     if not user or not user.get("active"):
         raise HTTPException(401, "Conta inativa")
-    await db.refresh_tokens.update_one({"token_hash": doc["token_hash"]}, {"$set": {"revoked": True}})
     return {"access_token": create_access(user), "refresh_token": await new_refresh(user["id"], doc["family"]), "user": user}
 
 
@@ -190,7 +193,9 @@ async def reset(body: ResetIn):
     await db.password_resets.update_one({"token_hash": doc["token_hash"]}, {"$set": {"used": True}})
     await db.refresh_tokens.update_many({"user_id": doc["user_id"]}, {"$set": {"revoked": True}})
     await db.reset_requests.update_one({"user_id": doc["user_id"]}, {"$set": {"handled": True}})
-    await db.login_attempts.delete_many({})
+    target = await db.users.find_one({"id": doc["user_id"]}, {"_id": 0, "email": 1})
+    if target:
+        await db.login_attempts.delete_one({"email": target["email"]})
     await audit(doc["user_id"], "auth.password_reset")
     return {"ok": True}
 
@@ -391,7 +396,8 @@ async def _assign(s: dict, tech_id: str, actor: dict, action: str):
     payload = {"session_id": s["id"], "technician_id": tech_id, "technician_name": tech["name"]}
     await sio.emit("support:assigned", payload, room=f"technician:{tech_id}")
     await sio.emit("support:assigned", payload, room=f"device:{s['device_id']}")
-    if action == "transfer" and s.get("technician_id"):
+    if s.get("technician_id") and s["technician_id"] != tech_id:
+        await evict_user(s["technician_id"], s["id"])
         await sio.emit("session:transferred", payload, room=f"technician:{s['technician_id']}")
     s.update({"technician_id": tech_id, "status": status})
     await broadcast_queue(s)
@@ -589,7 +595,9 @@ async def write_settings(body: SettingsIn, admin=Depends(super_admin)):
 
 @api.get("/audit")
 async def read_audit(limit: int = 200, admin=Depends(super_admin)):
-    return await db.auditLogs.find({}, {"_id": 0}).sort("at", -1).to_list(min(limit, 1000))
+    logs = await db.auditLogs.find({}, {"_id": 0}).sort("at", -1).to_list(min(limit, 1000))
+    names = {u["id"]: u["name"] for u in await db.users.find({}, {"_id": 0, "id": 1, "name": 1}).to_list(1000)}
+    return [{**l, "actor_name": names.get(l["actor"], l["actor"])} for l in logs]
 
 
 @api.get("/health")

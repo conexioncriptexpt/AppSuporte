@@ -177,5 +177,6 @@ def rate_limit(key: str, limit: int, window_s: int):
 
 
 def client_ip(request: Request) -> str:
+    # Right-most hop is the one appended by our own ingress; earlier hops are client-supplied.
     fwd = request.headers.get("x-forwarded-for", "")
-    return fwd.split(",")[0].strip() if fwd else (request.client.host if request.client else "")
+    return fwd.split(",")[-1].strip() if fwd else (request.client.host if request.client else "")

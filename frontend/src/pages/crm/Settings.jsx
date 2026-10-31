@@ -219,7 +219,7 @@ const Audit = () => {
       {logs.map((l) => (
         <div key={l.id} className="grid grid-cols-[150px_200px_1fr] gap-3 border-b border-[#1e293b] py-1.5 text-xs">
           <span className="font-mono text-slate-500">{fmtDateTime(l.at)}</span><span className="text-lime-400">{l.action}</span>
-          <span className="truncate text-slate-400">{l.actor} {l.target && `→ ${l.target}`}</span>
+          <span className="truncate text-slate-400">{l.actor_name} {l.target && `→ ${l.target}`}</span>
         </div>
       ))}
     </Card>

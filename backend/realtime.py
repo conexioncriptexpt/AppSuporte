@@ -19,6 +19,13 @@ async def _room(fn, sid, room):
         await r
 
 
+async def evict_user(user_id: str, session_id: str):
+    """Remove a technician's sockets from a session room (after transfer)."""
+    for sid in list(ONLINE_USERS.get(user_id, set())):
+        if SIDS.get(sid, {}).get("role") != "super_admin":
+            await _room(sio.leave_room, sid, f"session:{session_id}")
+
+
 async def broadcast_queue(session: dict = None):
     """Tell CRM clients that queue/sessions changed."""
     data = {"session_id": session["id"] if session else None, "status": session.get("status") if session else None}
@@ -406,6 +413,8 @@ async def consent_update(sid, data):
     info, s = await _access(sid, data.get("session_id"))
     if not s or info["kind"] != "device":
         return {"ok": False}
+    if data.get("control") and s.get("platform") == "browser":
+        return {"ok": False, "error": "O navegador não permite controlo remoto"}
     upd = {}
     for k in ("screen", "control"):
         if k in data:

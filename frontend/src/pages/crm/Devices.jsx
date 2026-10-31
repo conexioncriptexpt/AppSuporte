@@ -62,10 +62,10 @@ export default function Devices() {
           <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
           <input data-testid="devices-search-input" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Pesquisar por nome, cliente ou sistema" className={`${inputCls} pl-9`} />
         </div>
-        <select data-testid="devices-os-filter" value={os} onChange={(e) => setOs(e.target.value)} className={`${inputCls} w-44`}>
+        <select data-testid="devices-os-filter" value={os} onChange={(e) => setOs(e.target.value)} className={`${inputCls} !w-44`}>
           <option value="">Todos os sistemas</option><option value="browser">Navegador</option><option value="android">Android</option><option value="windows">Windows</option>
         </select>
-        <select data-testid="devices-status-filter" value={status} onChange={(e) => setStatus(e.target.value)} className={`${inputCls} w-36`}>
+        <select data-testid="devices-status-filter" value={status} onChange={(e) => setStatus(e.target.value)} className={`${inputCls} !w-36`}>
           <option value="">Todos</option><option value="online">Online</option><option value="offline">Offline</option>
         </select>
       </div>

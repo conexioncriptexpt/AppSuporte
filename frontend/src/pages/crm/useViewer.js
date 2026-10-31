@@ -86,6 +86,12 @@ export function useViewer(id) {
     load();
   });
   useSocketEvent("queue:changed", (d) => d.session_id === id && load());
+  useSocketEvent("session:transferred", (d) => {
+    if (d.session_id !== id) return;
+    r.current.pc?.close(); r.current.pc = null; setStream(null);
+    toast.info(`Atendimento transferido para ${d.technician_name}`);
+    load();
+  });
 
   // Watchdog + stats: re-negotiate when the link drops, report quality.
   useEffect(() => {
