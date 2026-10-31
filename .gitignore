@@ -95,3 +95,9 @@ android/local.properties
 *.jks
 *.keystore
 frontend/node_modules/.cache/default-development/0.pack
+.env
+.env.*
+*.env
+credentials.json
+*.key
+.credentials
