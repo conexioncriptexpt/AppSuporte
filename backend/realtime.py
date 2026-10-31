@@ -58,8 +58,7 @@ async def end_session(session_id: str, by: str):
     await db.supportRequests.update_one({"session_id": session_id}, {"$set": {"status": "closed", "closed_at": iso(ended)}})
     await add_op(session_id, by, "Sessão terminada")
     payload = {"session_id": session_id, "by": by}
-    await sio.emit("session:ended", payload, room=f"session:{session_id}")
-    await sio.emit("session:ended", payload, room=f"device:{s['device_id']}")
+    await sio.emit("session:ended", payload, room=[f"session:{session_id}", f"device:{s['device_id']}"])
     s["status"] = "ended"
     await broadcast_queue(s)
     await audit(by, "session.end", session_id)
@@ -239,8 +238,7 @@ async def support_accepted(sid, data):
         return {"ok": False, "error": "Sessão não disponível"}
     await _room(sio.enter_room, sid, f"session:{s['id']}")
     payload = {"session_id": s["id"], "technician_name": s.get("technician_name")}
-    await sio.emit("session:started", payload, room=f"session:{s['id']}")
-    await sio.emit("session:started", payload, room=f"device:{s['device_id']}")
+    await sio.emit("session:started", payload, room=[f"session:{s['id']}", f"device:{s['device_id']}"])
     s["status"] = "active"
     await broadcast_queue(s)
     return {"ok": True}
@@ -340,8 +338,7 @@ async def privacy_enable(sid, data):
     if not user.get("permissions", {}).get("privacy"):
         return {"ok": False, "error": "Sem permissão para modo de privacidade"}
     await db.sessions.update_one({"id": s["id"]}, {"$set": {"privacy": True}})
-    await sio.emit("privacy:enabled", {"session_id": s["id"]}, room=f"session:{s['id']}")
-    await sio.emit("privacy:enabled", {"session_id": s["id"]}, room=f"device:{s['device_id']}")
+    await sio.emit("privacy:enabled", {"session_id": s["id"]}, room=[f"session:{s['id']}", f"device:{s['device_id']}"])
     await add_op(s["id"], user["name"], "Modo de privacidade ativado")
     return {"ok": True}
 
@@ -352,8 +349,7 @@ async def privacy_disable(sid, data):
     if not s:
         return {"ok": False}
     await db.sessions.update_one({"id": s["id"]}, {"$set": {"privacy": False}})
-    await sio.emit("privacy:disabled", {"session_id": s["id"], "by": info["kind"]}, room=f"session:{s['id']}")
-    await sio.emit("privacy:disabled", {"session_id": s["id"], "by": info["kind"]}, room=f"device:{s['device_id']}")
+    await sio.emit("privacy:disabled", {"session_id": s["id"], "by": info["kind"]}, room=[f"session:{s['id']}", f"device:{s['device_id']}"])
     await add_op(s["id"], "cliente" if info["kind"] == "device" else "técnico", "Modo de privacidade desativado")
     return {"ok": True}
 

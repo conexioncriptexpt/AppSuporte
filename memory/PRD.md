@@ -28,6 +28,11 @@ Super Admin (owner), Técnico/Tutor, Cliente assistido (idoso / baixa literacia 
 - One-click direct download + a 3-step install guide (Android / Windows SmartScreen).
 - Workflow: runs on every push to main + manual; backend URL defaults to the preview URL unless vars.CONEX_BACKEND_URL is set; installer paths fixed; Android minSdk 26, lint not blocking.
 
+## Implemented (2026-10-31, iteration 3)
+- Consola ao Vivo (/crm/consola, landing after login): 3 columns (Aparelhos ligados / Visualizador ao Vivo / Comandos-Acessib.-Logs), navigation grid, X/Y click, text, guided message, privacy button; header counters NOVOS/ATIVAS/ONLINE; Equipa page (technicians moved from Configurações).
+- Sessions with device offline > 10 min auto-ended; deduplicated device socket events; toasts bottom-right.
+- Workflow: removed failing setup-android step; Windows release published even if Android fails.
+
 ## Known limitations
 - Native apps not tested on physical devices; Android not compiled in this environment.
 - Android privacy overlay is also visible to the technician (Android captures overlays).

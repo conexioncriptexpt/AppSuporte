@@ -1,0 +1,32 @@
+{
+  "summary": "Iteration 4 retest of the 2 HIGH items from iteration 3 plus the stale-session fix. All pass. (1) Login lands on /crm/consola, and visiting /crm/login while logged in redirects to /crm/consola. (2) In Consola ao Vivo, clicking take-btn-<id> stays on /crm/consola, keeps the device selected (lime border), and shows the 'Pedido atribuído a si' bar with console-accept-btn in the centre. Clicking accept starts the stream state on the console (status Em curso, 'A estabelecer a transmissão', commands enabled). The no-navigation-on-failure path was checked by code review only (`if (!ok) return`). (3) end_stale_sessions: pending and active sessions whose device has been offline for more than 10 minutes are ended with ended_by 'sistema (cliente desligado)' via GET /api/sessions and GET /api/dashboard. A device offline for 3 minutes is not ended. Regression passed: header counters (novos/ativas/online go 1/0/1 -> 0/1/1 -> 0/0/1), privacy on/off (the device received the events), guided message (the device received chat:message and the input cleared), and Terminar assistência.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "socket emits to device (privacy:enabled, privacy:disabled, session:ended)", "issue": "The simulated device received every privacy and session:ended event twice. The device socket is in both room session:<id> and room device:<id>, and end_session (realtime.py) emits to both rooms. Clients that are not idempotent may show duplicate toasts or overlays. Fix: emit once, with room=[...] and skip_sid, or dedupe."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Consola header", "issues": ["Sonner toasts (top-right) cover the header counters and the user/logout area for a few seconds after each action"]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_iteration4_stale.py", "/app/backend/tests/test_iteration3_console.py", "/app/test_reports/pytest/iteration4.xml"],
+  "action_items": [
+    "Optional: stop sending duplicate socket events to devices that are in both the session room and the device room.",
+    "Optional: move the toasts away from the header counters (e.g. bottom-right)."
+  ],
+  "critical_code_review_comments": [
+    "end_stale_sessions runs on every GET /sessions and /dashboard. That is fine at the current scale, but it does a distinct plus a loop each time; consider throttling it like cleanup_retention.",
+    "The session ended by a technician stores ended_by as the user id, while the system end stores a readable label. This is inconsistent for display."
+  ],
+  "updated_files": ["/app/backend/tests/test_iteration4_stale.py"],
+  "success_rate": {"backend": "100% (6/6)", "frontend": "100%"},
+  "test_credentials": "test_admin@cryptoconex-teste.pt / TestConex#2026 (kept)",
+  "seed_data_creation": "Temporary TEST_ devices and sessions were created and cleaned up (devices with an install_id starting TEST_ were deleted).",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Stale test: pymongo directly sets devices.last_seen 11 minutes back and online false after the socket disconnects. Console flow without navigation: console-device-<sid> -> take-btn-<sid> -> console-accept-btn (same page). Privacy: console-privacy-btn, then console-privacy-off-btn / console-privacy-ask-btn. Guided message: console-msg-input + console-msg-send. End: console-end-btn. Sim device: `cd /app/backend/tests && python sim_android_device.py 400 > /tmp/sim_dev.log &`."
+}
