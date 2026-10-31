@@ -629,13 +629,14 @@ async def startup():
         u = await db.users.find_one({"email": email}, {"_id": 0})
         if not u:
             await db.users.insert_one({"id": new_id(), "name": "Super Admin", "email": email, "password_hash": hash_pw(pw),
-                                       "role": "super_admin", "active": True, "permissions": DEFAULT_PERMS,
+                                       "role": "super_admin", "active": True, "permissions": DEFAULT_PERMS, "seed_pw_sha": sha(pw),
                                        "created_at": iso(), "last_login": None})
             log.info("super admin created")
         else:
+            # Env password applies only when the env value itself changes; CRM password changes are kept otherwise.
             upd = {"role": "super_admin", "active": True}
-            if not verify_pw(pw, u["password_hash"]):
-                upd["password_hash"] = hash_pw(pw)
+            if u.get("seed_pw_sha") != sha(pw):
+                upd.update({"password_hash": hash_pw(pw), "seed_pw_sha": sha(pw)})
             await db.users.update_one({"email": email}, {"$set": upd})
     else:
         log.warning("SUPER_ADMIN_PASSWORD not set: super admin not seeded")

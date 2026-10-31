@@ -59,6 +59,8 @@ http.interceptors.response.use(
 );
 
 export const errMsg = (e) => {
+  if (!e?.response) return "Sem ligação ao servidor. Verifique a internet e tente novamente.";
+  if (e.response.status >= 500) return "O servidor está indisponível de momento. Tente dentro de instantes.";
   const d = e?.response?.data?.detail;
   if (Array.isArray(d)) return "Dados inválidos: verifique os campos.";
   return d || "Ocorreu um erro. Tente novamente.";
