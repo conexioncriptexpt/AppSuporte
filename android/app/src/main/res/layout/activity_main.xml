@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:fillViewport="true" android:background="@color/bg">
+
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="vertical" android:gravity="center_horizontal" android:padding="24dp">
+
+        <ImageView android:id="@+id/logo" android:layout_width="180dp" android:layout_height="180dp"
+            android:layout_marginTop="16dp" android:src="@drawable/logo" android:contentDescription="@string/app_name" />
+
+        <TextView android:id="@+id/title" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="16dp" android:gravity="center" android:text="@string/welcome"
+            android:textColor="#FFFFFF" android:textSize="26sp" android:textStyle="bold" />
+
+        <TextView android:id="@+id/subtitle" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="8dp" android:gravity="center" android:text="@string/subtitle"
+            android:textColor="@color/muted" android:textSize="18sp" />
+
+        <TextView android:id="@+id/status" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="24dp" android:gravity="center" android:textColor="@color/lime"
+            android:textSize="22sp" android:textStyle="bold" android:accessibilityLiveRegion="assertive" />
+
+        <com.google.android.material.button.MaterialButton android:id="@+id/connect"
+            android:layout_width="match_parent" android:layout_height="96dp" android:layout_marginTop="24dp"
+            android:text="@string/connect" android:textSize="30sp" android:textStyle="bold"
+            android:textColor="@color/bg" app:backgroundTint="@color/lime" app:cornerRadius="28dp"
+            xmlns:app="http://schemas.android.com/apk/res-auto" />
+
+        <LinearLayout android:id="@+id/touchRow" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="20dp" android:orientation="vertical" android:visibility="gone">
+            <com.google.android.material.switchmaterial.SwitchMaterial android:id="@+id/allowTouch"
+                android:layout_width="match_parent" android:layout_height="64dp"
+                android:text="@string/allow_touch" android:textColor="#FFFFFF" android:textSize="18sp" />
+            <com.google.android.material.button.MaterialButton android:id="@+id/enableA11y"
+                android:layout_width="match_parent" android:layout_height="64dp"
+                android:text="@string/enable_a11y" android:textSize="18sp"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
+        </LinearLayout>
+
+        <com.google.android.material.button.MaterialButton android:id="@+id/terminate"
+            android:layout_width="match_parent" android:layout_height="80dp" android:layout_marginTop="20dp"
+            android:text="@string/terminate" android:textSize="26sp" android:textStyle="bold"
+            android:textColor="#FFFFFF" android:visibility="gone"
+            app:backgroundTint="@color/danger" app:cornerRadius="24dp"
+            xmlns:app="http://schemas.android.com/apk/res-auto" />
+
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="28dp" android:gravity="center" android:text="@string/privacy_note"
+            android:textColor="@color/muted" android:textSize="15sp" />
+    </LinearLayout>
+</ScrollView>

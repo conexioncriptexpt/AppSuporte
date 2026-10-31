@@ -1,0 +1,146 @@
+{
+  "project_name": "APP DE SUPORTE TÉCNICO (Crypto Conex)",
+  "app_type": "hybrid_fullstack",
+  "language": "pt-PT",
+  "design_archetype": "Tactical Performance & High Contrast Accessibility",
+  "brand_assets": {
+    "logo_url": "https://customer-assets-rejwkqb3.emergentagent.net/job_7898ef4c-e161-4912-81ee-d728a77797b0/artifacts/1da82efaddae6ee1_image.png",
+    "logo_description": "Fundo preto, 'APP' cinzento com auscultadores e engrenagem verde-limão, 'DE SUPORTE TÉCNICO'",
+    "do_not_replace_logo": true
+  },
+  "credits_footer": {
+    "text": "Criado por Victor Silva (Rafael Amorim)",
+    "style": "Discreet, small muted text, bottom of CRM and public page"
+  },
+  "colors": {
+    "background_dark": "#0b0f17",
+    "surface_dark": "#111827",
+    "surface_card": "#161e2e",
+    "surface_card_hover": "#1d283a",
+    "border": "#27354a",
+    "border_subtle": "#1e293b",
+    "primary_lime": "#84cc16",
+    "primary_lime_hover": "#a3e635",
+    "primary_lime_light": "#bef264",
+    "primary_lime_glow": "rgba(132, 204, 22, 0.25)",
+    "text_white": "#ffffff",
+    "text_muted": "#94a3b8",
+    "text_subtle": "#64748b",
+    "danger": "#ef4444",
+    "danger_hover": "#dc2626",
+    "warning": "#f59e0b",
+    "info": "#3b82f6",
+    "success": "#22c55e"
+  },
+  "typography": {
+    "heading_font": "Outfit, sans-serif",
+    "body_font": "Inter, sans-serif",
+    "mono_font": "JetBrains Mono, monospace",
+    "public_page_scale": {
+      "title": "text-3xl sm:text-5xl font-extrabold tracking-tight text-white",
+      "subtitle": "text-lg sm:text-2xl text-slate-300 font-medium",
+      "giant_button": "text-2xl sm:text-3xl font-black py-6 px-12 rounded-2xl shadow-2xl"
+    },
+    "crm_scale": {
+      "h1": "text-2xl font-bold text-white tracking-tight",
+      "h2": "text-xl font-semibold text-white",
+      "h3": "text-lg font-medium text-slate-200",
+      "body": "text-sm text-slate-300",
+      "caption": "text-xs text-slate-400"
+    }
+  },
+  "key_components": {
+    "crm_shell": {
+      "lisbon_clock": "Real-time clock displaying Lisbon time (Europe/Lisbon WET/WEST format: HH:mm:ss - D de MMMM, YYYY) at top right of CRM header.",
+      "header_elements": ["Logo Crypto Conex", "Lisbon Clock", "Tech Status Badge (Disponível/Ocupado toggle)", "Tech User Avatar", "Logout Button"],
+      "sidebar_nav": ["Dashboard", "Atendimentos", "Dispositivos", "Links de Assistência", "Configurações"],
+      "footer": "Discreet footer 'Criado por Victor Silva (Rafael Amorim)' centered/right at page bottom"
+    },
+    "dashboard_view": {
+      "metrics_grid": [
+        "Dispositivos Totais",
+        "Dispositivos Ligados",
+        "Pedidos Pendentes",
+        "Atendimentos Ativos",
+        "Técnicos Disponíveis / Ocupados"
+      ],
+      "chart_7_days": "Recharts line/area chart showing 7-day remote assistance volume.",
+      "realtime_queue": "Live list of pending assistance requests with client name, device type, wait time, priority tag, and 'Atender Agora' button."
+    },
+    "assistance_viewer": {
+      "stream_layout": "Split layout with WebRTC Client Screen Stream on left/center and Diagnostic Side Panel on right.",
+      "stream_controls_rule": "CRITICAL: Stream controls (zoom +, zoom -, fit, refresh, privacy toggle) MUST be placed OUTSIDE the video display frame, in a dedicated toolbar bar above or below the screen viewport to prevent obstructing the client's screen view.",
+      "privacy_mode_button": "'ATIVAR MODO DE PRIVACIDADE' / 'DESATIVAR MODO DE PRIVACIDADE' toggle button. Triggers dark blurred overlay on stream reading 'Ajuste Técnico em Curso - Modo de Privacidade Ativo'.",
+      "side_panel_tabs": ["Dados do Dispositivo", "Estado & Qualidade", "Chat em Direto", "Histórico de Operações"]
+    },
+    "devices_table": {
+      "features": ["Search by name/IP/OS", "Filter by status (Online/Offline)", "Rename Device Modal", "Delete Confirmation Modal", "Generate Direct Link"]
+    },
+    "assistance_links": {
+      "features": ["Generate 6-digit PIN", "Generate QR Code", "Copy Direct Web URL", "Expiration Time Setting (15m, 1h, 24h)"]
+    },
+    "settings_page": {
+      "sections": ["Gestão de Técnicos (CRUD)", "Permissões & Papéis", "Registo de Auditoria (Security Logs)", "Retenção de Dados & Privacidade GDPR"]
+    },
+    "public_page": {
+      "style": "Ultra accessible, dark background, high contrast, clean big target components for non-tech users.",
+      "header": "Logo 'APP DE SUPORTE TÉCNICO' prominently displayed",
+      "title": "Bem-vindo ao APP DE SUPORTE TÉCNICO",
+      "subtitle": "Vamos ajudar-te a resolver o teu problema",
+      "primary_action": "Giant centered button 'CONECTAR' (lime green with high contrast black bold text, pulsing ring)",
+      "secondary_action": "Button 'DESCARREGAR APLICAÇÃO' (outlined lime/slate target)",
+      "privacy_note": "Clear reassuring message in pt-PT: 'Assistência 100% segura e consentida. Pode cancelar a ligação a qualquer momento.'",
+      "state_flow": {
+        "idle": "Show giant CONECTAR button & DESCARREGAR button",
+        "waiting": "Status card: 'A aguardar técnico…' with animated spinner and cancel button",
+        "active": "Status card: 'Assistência ativa', client chat window, and floating sticky bottom 'TERMINAR ASSISTÊNCIA' red button always visible",
+        "privacy_overlay": "Full viewport modal/overlay on client screen: 'Ajuste Técnico — Aguarde...'"
+      }
+    }
+  },
+  "testing_and_data_ids": {
+    "public_page": {
+      "connect_btn": "public-connect-btn",
+      "download_btn": "public-download-btn",
+      "terminate_btn": "public-terminate-btn",
+      "chat_input": "public-chat-input",
+      "chat_send": "public-chat-send-btn",
+      "status_badge": "public-session-status"
+    },
+    "crm": {
+      "login_email": "crm-login-email-input",
+      "login_password": "crm-login-password-input",
+      "login_submit": "crm-login-submit-btn",
+      "lisbon_clock": "crm-lisbon-clock",
+      "tech_status_toggle": "crm-tech-status-toggle",
+      "nav_dashboard": "crm-nav-dashboard",
+      "nav_sessions": "crm-nav-sessions",
+      "nav_devices": "crm-nav-devices",
+      "nav_links": "crm-nav-links",
+      "nav_settings": "crm-nav-settings",
+      "queue_item": "crm-queue-item",
+      "start_session_btn": "crm-start-session-btn",
+      "privacy_toggle_btn": "crm-privacy-toggle-btn",
+      "zoom_in_btn": "crm-stream-zoom-in",
+      "zoom_out_btn": "crm-stream-zoom-out",
+      "stream_canvas": "crm-stream-canvas"
+    }
+  },
+  "technical_rules": {
+    "code_language": "React JS (.js files, NOT .tsx)",
+    "styling": "Tailwind CSS with custom modern dark theme classes",
+    "toast_library": "sonner",
+    "charts_library": "recharts",
+    "icons_library": "lucide-react",
+    "no_transparent_overlays": "Ensure dropdowns, headers, and modals have solid or heavy backdrop-blur dark backgrounds (#111827 / #161e2e with backdrop-blur-md) never plain clear transparent."
+  },
+  "instructions_to_main_agent": [
+    "Use standard JavaScript React (.js files) since the codebase uses JS.",
+    "Ensure all copy is strictly in Portuguese of Portugal (pt-PT).",
+    "Implement both the CRM app routes and the Public Support route (/conectar or /suporte).",
+    "Always include data-testid on all interactive buttons, inputs, links, and status badges.",
+    "Make sure stream controls and privacy toggle in the stream viewer are strictly located OUTSIDE the stream viewport area so video content is 100% visible.",
+    "Ensure Lisbon clock is live and updates every second showing Lisbon local time.",
+    "Include the required discreet footer 'Criado por Victor Silva (Rafael Amorim)'."
+  ]
+}

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Suporte Técnico</string>
+    <string name="a11y_label">Ajuda por toque — Suporte Técnico</string>
+    <string name="a11y_description">Permite que o técnico, durante uma assistência que tu autorizaste, leia os textos e botões do ecrã e toque por ti. Nunca escreve em campos de palavra-passe, PIN, cartão ou IBAN. Só funciona com a assistência ativa e podes desligar a qualquer momento.</string>
+    <string name="welcome">Bem-vindo ao APP DE SUPORTE TÉCNICO</string>
+    <string name="subtitle">Vamos ajudar-te a resolver o teu problema</string>
+    <string name="connect">CONECTAR</string>
+    <string name="terminate">TERMINAR</string>
+    <string name="allow_touch">Permitir que o técnico toque no ecrã</string>
+    <string name="enable_a11y">Ativar ajuda por toque</string>
+    <string name="privacy_note">A tua privacidade é importante. A partilha do ecrã só começa depois da tua autorização.</string>
+    <string name="privacy_title">Ajuste Técnico — Aguarde...</string>
+    <string name="privacy_off">Desligar este modo</string>
+</resources>

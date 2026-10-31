@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="bg">#0B0F17</color>
+    <color name="card">#161E2E</color>
+    <color name="lime">#84CC16</color>
+    <color name="danger">#DC2626</color>
+    <color name="muted">#94A3B8</color>
+    <style name="Theme.CryptoConex" parent="Theme.MaterialComponents.NoActionBar">
+        <item name="colorPrimary">@color/lime</item>
+        <item name="colorOnPrimary">@color/bg</item>
+        <item name="android:windowBackground">@color/bg</item>
+        <item name="android:statusBarColor">@color/bg</item>
+        <item name="android:navigationBarColor">@color/bg</item>
+    </style>
+</resources>
