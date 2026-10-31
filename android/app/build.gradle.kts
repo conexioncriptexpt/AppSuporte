@@ -3,7 +3,7 @@ plugins {
     id("org.jetbrains.kotlin.android")
 }
 
-val backendUrl: String = System.getenv("CONEX_BACKEND_URL") ?: (project.findProperty("CONEX_BACKEND_URL") as String? ?: "https://SEU-DOMINIO.pt")
+val backendUrl: String = System.getenv("CONEX_BACKEND_URL") ?: (project.findProperty("CONEX_BACKEND_URL") as String? ?: "https://conex-assist-2.emergentagent.host")
 val appVersion: String = System.getenv("APP_VERSION") ?: "1.0.0"
 val buildNumber: Int = (System.getenv("GITHUB_RUN_NUMBER") ?: "1").toInt()
 
