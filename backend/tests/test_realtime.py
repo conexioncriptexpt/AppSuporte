@@ -32,7 +32,7 @@ def got(c, ev, timeout=6, pred=lambda d: True):
 
 @pytest.fixture(scope="module")
 def flow(admin, t1, t2):
-    dev = register_device()
+    dev = register_device(platform="android")  # android: remote control consent allowed
     link = t1.post(f"{API}/links", json={"days": 1}).json()
     a = connect(admin.token)
     u1 = connect(t1.token)

@@ -46,9 +46,9 @@ def t2():
     return _auth(T2)
 
 
-def register_device(name=None):
+def register_device(name=None, platform="browser"):
     iid = f"TEST_{uuid.uuid4().hex}"
-    r = requests.post(f"{API}/device/register", json={"install_id": iid, "platform": "browser", "os": "Linux",
+    r = requests.post(f"{API}/device/register", json={"install_id": iid, "platform": platform, "os": "Linux",
                                                        "os_version": "Chrome", "name": name or f"TEST_dev_{iid[-6:]}"}, timeout=20)
     assert r.status_code == 200, r.text
     return {**r.json(), "install_id": iid}

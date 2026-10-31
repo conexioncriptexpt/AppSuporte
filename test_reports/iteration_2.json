@@ -1,0 +1,33 @@
+{
+  "summary": "Iteration 2 retest of the iteration 1 fixes plus a main-flow regression. Backend: 34/34 pytest pass (existing suites updated, and the new test_iteration2_fixes.py added). Verified: links with days=0 have expires_at=null and stay valid; on transfer the old technician is evicted from room session:{id} (no chat:message, session:op, webrtc:offer or ice after the transfer; rejoin, relay and chat are refused); XFF first-hop spoofing no longer bypasses the 10/5min per IP+email limit (the 11th request returns 429), and other emails from the same IP still work; /auth/reset no longer clears another user's lockout; two parallel refreshes give exactly one 200 and one 401, and the family is revoked; consent:update control=true from a browser device returns ok:false. Frontend (Playwright with fake getDisplayMedia): 'Sem validade' plus 'Gerar novo link' creates the link and shows 'Sem validade' in the table. Full flow works: CONECTAR -> queue -> admin assign -> T1 accept -> WebRTC connected 1280x720 -> chat both ways -> privacy overlay on and off -> admin transfer to T2. T1 gets the toast 'Atendimento transferido para TEST Técnico Dois' and the 'Sessão não encontrada ou sem acesso' card. The client ends the session and it appears in the history. Devices filters are inline on desktop and mobile. Auditoria shows user names for actors.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "GET /api/audit", "issue": "actor_name only maps users. Device actors still show as 'device:<uuid>' and targets are raw UUIDs (sessions, devices, links). Deleted users fall back to a raw UUID. This is cosmetic."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {"flow": "Client name (carried over from iteration 1, not in scope)", "issue": "ConnectPage still calls a.start(\"\"), so the client name shows as '—' in the history and queue.", "affected_selectors": ["public-connect-btn"]}
+    ],
+    "design_issues": [
+      {"screen": "Settings > Auditoria", "issues": ["Device actors and targets are shown as long UUIDs. Consider mapping them to device names or short IDs."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_iteration2_fixes.py", "/app/backend/tests/test_api.py", "/app/backend/tests/test_realtime.py", "/app/backend/tests/conftest.py", "/app/test_reports/pytest/pytest_results_it2.xml"],
+  "action_items": [
+    "Optional: map device actors to device names in /api/audit (and possibly targets).",
+    "Optional (from iteration 1): add a client name input on the public page."
+  ],
+  "critical_code_review_comments": [
+    "client_ip uses the right-most XFF hop. This is correct for the current single ingress (observed real egress IPs in the audit). If another proxy or CDN is added in front, all users would share one IP key. Consider a TRUSTED_PROXY_HOPS env setting.",
+    "The rate limiter (_rate) is in-process memory. It is not shared across workers or replicas and grows without bound for unique keys. Add periodic pruning, or Mongo/Redis if scaling."
+  ],
+  "updated_files": ["/app/backend/tests/conftest.py (register_device platform param)", "/app/backend/tests/test_realtime.py (flow uses android device, since browser control consent is now rejected)", "/app/backend/tests/test_iteration2_fixes.py (new)"],
+  "success_rate": {"backend": "100% (34/34)", "frontend": "100% of retested flows"},
+  "seed_data_creation": "Temporary test_it2_* users are created and deleted by the fixture. Created link L7exnYZStcoi (Sem validade) for T1 and revoked it afterwards. One ended session 13efeb23 is left in the history.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Run: cd /app/backend/tests && python -m pytest -q (xdist -n 2, ~3 min). Login rate limit: 60 per 5 min per IP and 10 per 5 min per IP+email. The XFF trick no longer works, so the full suite plus a few UI logins fit in one window; wait 5 min if you see 'Demasiados pedidos'. Realtime tests needing remote control must register an android device (register_device(platform='android')). User IDs: T1 0cc784d5-0626-4511-b36f-4056c22d3a24, T2 1c974ef8-bfcc-41de-9341-0233bee552aa. UI selectors: assign-btn-{sid}, tech-pick-{uid}, transfer-btn-{sid} (on /crm/atendimentos), viewer-accept-btn, crm-privacy-toggle-btn, public-privacy-disable-btn, public-terminate-btn, sessions-tab-history. Fake screen: add_init_script overriding getDisplayMedia with canvas.captureStream."
+}
