@@ -3,12 +3,12 @@ import { Radio, MonitorPlay, Loader2 } from "lucide-react";
 import { http } from "../../lib/api";
 import { since, PLATFORM_LABEL } from "../../lib/format";
 import { useAuth, useSocketEvent } from "../../context/AuthContext";
-import { Card, StatusBadge, SessionActions, Btn } from "../../components/crm/ui";
+import { Card, StatusBadge } from "../../components/crm/ui";
 import { useViewer } from "./useViewer";
 import { Stage } from "./Viewer";
 import { ConsolePanel } from "./ConsolePanel";
 
-const DeviceList = ({ items, selected, onSelect, reload }) => (
+const DeviceList = ({ items, selected, onSelect }) => (
   <Card className="flex flex-col p-4 xl:min-h-[70vh]">
     <div className="mb-3 flex items-center gap-2">
       <Radio className="h-4 w-4 text-lime-400" />
@@ -28,7 +28,6 @@ const DeviceList = ({ items, selected, onSelect, reload }) => (
             </div>
             <p className="mt-1 text-xs text-slate-400">{PLATFORM_LABEL[s.platform]} · {since(s.created_at)}{s.technician_name ? ` · ${s.technician_name}` : ""}</p>
           </button>
-          {selected === s.id && s.status === "pending" && <div className="mt-2"><SessionActions s={s} onDone={reload} onTaken={onSelect} compact /></div>}
         </li>
       ))}
     </ul>
@@ -52,13 +51,6 @@ const LiveView = ({ id }) => {
           {s.privacy && <span data-testid="console-privacy-badge" className="rounded-full bg-lime-500/15 px-2 py-0.5 text-xs text-lime-300">Privacidade ativa</span>}
           <span className="ml-auto font-mono text-xs text-slate-500" data-testid="console-rtc-state">{v.rtc} · {v.quality.fps || 0} fps · {v.quality.rtt ?? "—"} ms</span>
         </div>
-        {s.status === "assigned" && s.technician_id === user.id && (
-          <div className="mb-3 flex items-center gap-2 rounded-xl border border-[#27354a] p-3 text-sm">
-            <span className="flex-1">Pedido atribuído a si.</span>
-            <Btn data-testid="console-accept-btn" onClick={v.accept}>Aceitar</Btn>
-            <Btn variant="danger" data-testid="console-reject-btn" onClick={v.reject}>Rejeitar</Btn>
-          </div>
-        )}
         <Stage v={v} zoom={1} control={!!canControl} />
       </Card>
       <ConsolePanel v={v} canControl={!!canControl} />
@@ -78,17 +70,17 @@ export default function LiveConsole() {
   useSocketEvent("device:offline", load);
   const { user, isAdmin } = useAuth();
   const sel = items.find((s) => s.id === selected);
-  const viewable = sel && (isAdmin || sel.technician_id === user.id) && sel.status !== "pending";
+  const viewable = sel && (isAdmin || sel.technician_id === user.id || sel.target_technician_id === user.id);
 
   return (
     <div className="grid gap-4 xl:grid-cols-[300px_minmax(0,1fr)_360px]" data-testid="live-console">
-      <DeviceList items={items} selected={selected} onSelect={setSelected} reload={load} />
+      <DeviceList items={items} selected={selected} onSelect={setSelected} />
       {viewable ? <LiveView key={selected} id={selected} /> : (
         <>
           <Card className="flex min-h-[70vh] flex-col p-4">
             <div className="mb-3 flex items-center gap-2"><MonitorPlay className="h-4 w-4 text-lime-400" /><h2 className="font-semibold">Visualizador ao Vivo</h2></div>
             <div className="flex flex-1 flex-col items-center justify-center rounded-xl bg-black text-sm text-slate-500" data-testid="console-placeholder">
-              {sel?.status === "pending" ? "Atribua ou atenda este pedido para ver o ecrã." : "Selecione um aparelho ligado"}
+              {sel ? "Este atendimento pertence a outro técnico." : "Selecione um aparelho ligado"}
             </div>
           </Card>
           <ConsolePanel v={null} canControl={false} />

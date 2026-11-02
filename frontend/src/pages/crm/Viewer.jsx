@@ -13,8 +13,13 @@ export const Stage = ({ v, zoom, control }) => {
   const lastWheel = useRef(0);
   useEffect(() => { if (video.current && v.stream) video.current.srcObject = v.stream; }, [v.stream]);
   const pos = (e) => {
-    const rect = video.current.getBoundingClientRect();
-    return { x: Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width)), y: Math.min(1, Math.max(0, (e.clientY - rect.top) / rect.height)) };
+    const el = video.current;
+    const rect = el.getBoundingClientRect();
+    const vw = el.videoWidth || rect.width, vh = el.videoHeight || rect.height;
+    const sc = Math.min(rect.width / vw, rect.height / vh);
+    const w = vw * sc, h = vh * sc;
+    const clamp = (n) => Math.min(1, Math.max(0, n));
+    return { x: clamp((e.clientX - rect.left - (rect.width - w) / 2) / w), y: clamp((e.clientY - rect.top - (rect.height - h) / 2) / h) };
   };
   const onDown = (e) => { if (control) down.current = { ...pos(e), t: Date.now() }; };
   const onUp = (e) => {
@@ -38,11 +43,12 @@ export const Stage = ({ v, zoom, control }) => {
         <video ref={video} autoPlay playsInline muted data-testid="crm-stream-video"
           onPointerDown={onDown} onPointerUp={onUp} onWheel={onWheel} onContextMenu={(e) => control && e.preventDefault()}
           onDoubleClick={(e) => { if (control) { const p = pos(e); v.cmd({ type: "double_click", x: p.x, y: p.y }); } }}
-          style={{ width: `${zoom * 100}%`, cursor: control ? "crosshair" : "default" }} className="mx-auto h-auto max-w-none" />
+          style={zoom === 1 ? { cursor: control ? "crosshair" : "default" } : { width: `${zoom * 100}%`, cursor: control ? "crosshair" : "default" }}
+          className={zoom === 1 ? "h-full w-full touch-none object-contain" : "mx-auto h-auto max-w-none touch-none"} />
       ) : (
         <div className="flex h-full flex-col items-center justify-center gap-3 text-slate-500">
           {v.s?.status === "active" ? <Loader2 className="h-8 w-8 animate-spin text-lime-400" /> : null}
-          <p>{v.s?.status === "active" ? "A estabelecer a transmissão do ecrã…" : v.s?.status === "ended" ? "Sessão terminada." : "A transmissão começa depois de aceitar o atendimento."}</p>
+          <p>{v.s?.status === "active" ? "A estabelecer a transmissão do ecrã…" : v.s?.status === "ended" ? "Sessão terminada." : "A iniciar a assistência…"}</p>
         </div>
       )}
     </div>
@@ -54,7 +60,7 @@ export default function Viewer() {
   const { user, isAdmin } = useAuth();
   const v = useViewer(id);
   const [zoom, setZoom] = useState(1);
-  const [control, setControl] = useState(false);
+  const [control, setControl] = useState(true);
   const s = v.s;
 
   if (v.notFound) return <Card className="p-8 text-center text-slate-400">Sessão não encontrada ou sem acesso. <Link className="text-lime-400" to="/crm/atendimentos">Voltar</Link></Card>;
@@ -75,15 +81,6 @@ export default function Viewer() {
           <span className="ml-auto text-xs text-slate-400" data-testid="viewer-rtc-state">WebRTC: {v.rtc} · {s.resolution || (v.quality.w ? `${v.quality.w}x${v.quality.h}` : "—")}</span>
         </div>
 
-        {s.status === "assigned" && mine && (
-          <Card className="mb-3 flex flex-wrap items-center gap-3 p-4">
-            <p className="flex-1 text-sm">Este pedido foi-lhe atribuído. Aceite para iniciar a assistência.</p>
-            <Btn data-testid="viewer-accept-btn" onClick={v.accept}>Aceitar</Btn>
-            <Btn data-testid="viewer-reject-btn" variant="danger" onClick={v.reject}>Rejeitar</Btn>
-          </Card>
-        )}
-        {s.status === "assigned" && !mine && <Card className="mb-3 p-4 text-sm text-slate-400">A aguardar que {s.technician_name} aceite o atendimento.</Card>}
-        {s.status === "pending" && <Card className="mb-3 p-4 text-sm text-slate-400">Pedido pendente. {isAdmin ? "Atribua-o a um técnico nos Atendimentos." : ""}</Card>}
 
         <div className="mb-2 flex flex-wrap items-center gap-2 rounded-xl border border-[#27354a] bg-[#111827] p-2">
           <Btn variant="ghost" data-testid="crm-stream-zoom-out" onClick={() => setZoom((z) => Math.max(0.5, +(z - 0.25).toFixed(2)))} aria-label="Reduzir"><ZoomOut className="h-4 w-4" /></Btn>

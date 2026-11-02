@@ -47,7 +47,7 @@ object Assist {
 
     fun start(context: Context, projection: Intent) {
         ctx = context.applicationContext
-        update { State(phase = Phase.CONNECTING) }
+        update { State(phase = Phase.CONNECTING, control = AssistAccessibilityService.instance != null) }
         exec.execute {
             var attempt = 0
             while (true) {
@@ -143,7 +143,8 @@ object Assist {
     }
 
     private fun requestSupport() {
-        val body = JSONObject().put("consent_screen", true).put("screen", screen).put("link_code", "")
+        val body = JSONObject().put("consent_screen", true).put("consent_control", state.value.control)
+            .put("screen", screen).put("link_code", "")
         socket?.emit("support:request", body, Ack { args ->
             val j = args.firstOrNull() as? JSONObject ?: return@Ack
             if (!j.optBoolean("ok")) { update { it.copy(message = j.optString("error")) }; return@Ack }
@@ -152,7 +153,6 @@ object Assist {
             val active = sess.optString("status") == "active"
             update { it.copy(phase = if (active) Phase.ACTIVE else Phase.WAITING, tech = sess.optString("technician_name").takeIf { n -> n.isNotBlank() && n != "null" }) }
             socket?.emit("session:status", JSONObject().put("session_id", sessionId).put("resolution", screen))
-            if (state.value.control) sendConsent(true)
         })
     }
 
@@ -221,6 +221,8 @@ object Assist {
         val id = sessionId ?: return
         socket?.emit("consent:update", JSONObject().put("session_id", id).put("control", control))
     }
+
+    fun inSession() = state.value.phase == Phase.WAITING || state.value.phase == Phase.ACTIVE || state.value.phase == Phase.CONNECTING
 
     fun setControl(allowed: Boolean) { update { it.copy(control = allowed) }; sendConsent(allowed) }
 

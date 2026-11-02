@@ -27,7 +27,7 @@ public sealed class AssistClient : IDisposable
     public Phase Phase { get; private set; } = Phase.Idle;
     public string TechName { get; private set; }
     public bool Online { get; private set; } = true;
-    public bool ControlAllowed { get; private set; }
+    public bool ControlAllowed { get; private set; } = true;
     public bool Privacy { get; private set; }
     public string Message { get; private set; } = "";
     public event Action Changed;
@@ -125,7 +125,7 @@ public sealed class AssistClient : IDisposable
     private async Task RequestSupportAsync()
     {
         var res = $"{_capture.Width}x{_capture.Height}";
-        await _socket.EmitAsync("support:request", ack => { _ = OnSupportAck(ack.GetValue<JsonElement>(0), res); }, new { consent_screen = true, screen = res, link_code = "" });
+        await _socket.EmitAsync("support:request", ack => { _ = OnSupportAck(ack.GetValue<JsonElement>(0), res); }, new { consent_screen = true, consent_control = ControlAllowed, screen = res, link_code = "" });
     }
 
     private async Task OnSupportAck(JsonElement j, string res)
@@ -139,7 +139,6 @@ public sealed class AssistClient : IDisposable
             TechName = tn.ValueKind == JsonValueKind.String ? tn.GetString() : null;
             Notify();
             await _socket.EmitAsync("session:status", new { session_id = _sessionId, resolution = res });
-            if (ControlAllowed) await SendConsentAsync(true);
         }
     }
 
@@ -238,7 +237,7 @@ public sealed class AssistClient : IDisposable
         _capture?.Dispose(); _capture = null;
         try { _socket?.DisconnectAsync().Wait(1000); } catch { }
         _socket?.Dispose(); _socket = null;
-        _sessionId = null; Privacy = false; ControlAllowed = false; TechName = null;
+        _sessionId = null; Privacy = false; ControlAllowed = true; TechName = null;
         Phase = Phase.Ended;
         Notify();
     }

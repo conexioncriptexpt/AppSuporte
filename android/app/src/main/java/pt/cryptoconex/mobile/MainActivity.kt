@@ -43,9 +43,7 @@ class MainActivity : AppCompatActivity() {
         if (Build.VERSION.SDK_INT >= 33) notifPerm.launch(Manifest.permission.POST_NOTIFICATIONS)
 
         b.connect.setOnClickListener {
-            val mpm = getSystemService(MediaProjectionManager::class.java)
-            b.status.text = "Vai aparecer um pedido do Android. Carrega em \"Começar agora\"."
-            projection.launch(mpm.createScreenCaptureIntent())
+            if (AssistAccessibilityService.isEnabled(this)) startShare() else explainA11y(onSkip = ::startShare)
         }
         b.terminate.setOnClickListener { Assist.end(true) }
         b.allowTouch.setOnCheckedChangeListener { sw, checked ->
@@ -66,12 +64,18 @@ class MainActivity : AppCompatActivity() {
         b.enableA11y.visibility = if (AssistAccessibilityService.isEnabled(this)) View.GONE else View.VISIBLE
     }
 
-    private fun explainA11y() {
+    private fun startShare() {
+        val mpm = getSystemService(MediaProjectionManager::class.java)
+        b.status.text = "Vai aparecer um pedido do Android. Carrega em \"Começar agora\"."
+        projection.launch(mpm.createScreenCaptureIntent())
+    }
+
+    private fun explainA11y(onSkip: (() -> Unit)? = null) {
         AlertDialog.Builder(this)
             .setTitle("Ajuda por toque")
-            .setMessage("Para o técnico poder tocar no ecrã por ti, ativa \"Ajuda por toque — Suporte Técnico\" nas definições de Acessibilidade.\n\nSó funciona durante a assistência e nunca escreve palavras-passe, PIN, cartões ou IBAN.")
+            .setMessage("Para o técnico poder tocar no ecrã por ti, ativa \"Ajuda por toque — Suporte Técnico\" nas definições de Acessibilidade (só é preciso uma vez). Depois volta aqui e carrega em CONECTAR.\n\nSó funciona durante a assistência e nunca escreve palavras-passe, PIN, cartões ou IBAN.")
             .setPositiveButton("Abrir definições") { _, _ -> startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }
-            .setNegativeButton("Agora não", null)
+            .setNegativeButton(if (onSkip != null) "Só mostrar o ecrã" else "Agora não") { _, _ -> onSkip?.invoke() }
             .show()
     }
 

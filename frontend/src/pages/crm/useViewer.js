@@ -28,7 +28,19 @@ export function useViewer(id) {
     socket.emit("webrtc:request-offer", { session_id: id });
   }, [socket, id]);
 
-  useEffect(() => { load(); fetchIce(tokens.access).then((ice) => { r.current.ice = ice; }); }, [load]);
+  useEffect(() => {
+    (async () => {
+      const [d, ice] = await Promise.all([load(), fetchIce(tokens.access)]);
+      r.current.ice = ice;
+      if (!d || !socket || !["pending", "assigned"].includes(d.status) || r.current.opened) return;
+      r.current.opened = true;
+      try {
+        const { data } = await http.post(`/sessions/${id}/open`);
+        setS((p) => ({ ...p, ...data }));
+        requestOffer();
+      } catch (e) { toast.error(errMsg(e)); }
+    })();
+  }, [load, socket, id, requestOffer]);
 
   useEffect(() => {
     if (!socket) return undefined;
@@ -122,10 +134,8 @@ export function useViewer(id) {
     res(ack);
   }));
 
-  const accept = async () => { const a = await emit("support:accepted"); if (a?.ok) { await load(); requestOffer(); } };
-  const reject = async () => { const a = await emit("support:rejected"); if (a?.ok) load(); };
   const end = async () => { try { await http.post(`/sessions/${id}/end`); load(); } catch (e) { toast.error(errMsg(e)); } };
   const cmd = (command) => emit("remote:command", { command });
 
-  return { s, stream, rtc, quality, tree, notFound, load, accept, reject, end, cmd, emit, requestOffer };
+  return { s, stream, rtc, quality, tree, notFound, load, end, cmd, emit, requestOffer };
 }

@@ -431,6 +431,25 @@ async def take(sid: str, user=Depends(current_user)):
     return await _assign(s, user["id"], user, "take")
 
 
+@api.post("/sessions/{sid}/open")
+async def open_session(sid: str, user=Depends(current_user)):
+    s = await get_scoped_session(sid, user)
+    if s["status"] == "ended":
+        raise HTTPException(400, "Sessão terminada")
+    if s["status"] == "pending":
+        s = await _assign(s, user["id"], user, "take")
+    if s["status"] == "assigned":
+        await db.sessions.update_one({"id": s["id"]}, {"$set": {"status": "active", "started_at": iso()}})
+        await db.supportRequests.update_one({"session_id": s["id"]}, {"$set": {"status": "accepted"}})
+        await add_op(s["id"], user["name"], "Assistência iniciada")
+        await audit(user["id"], "session.open", s["id"])
+        await sio.emit("session:started", {"session_id": s["id"], "technician_name": s.get("technician_name")},
+                       room=[f"session:{s['id']}", f"device:{s['device_id']}"])
+        s["status"] = "active"
+        await broadcast_queue(s)
+    return await db.sessions.find_one({"id": s["id"]}, NO_BIG)
+
+
 @api.post("/sessions/{sid}/transfer")
 async def transfer(sid: str, body: AssignIn, user=Depends(current_user)):
     s = await get_scoped_session(sid, user)

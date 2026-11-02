@@ -171,8 +171,13 @@ async def support_request(sid, data):
                                           {"_id": 0, "operations": 0, "messages": 0})
     if existing:
         await _room(sio.enter_room, sid, f"session:{existing['id']}")
+        upd = {"connection_state": "ligado"}
         if data.get("consent_screen"):
-            await db.sessions.update_one({"id": existing["id"]}, {"$set": {"consent.screen": True, "connection_state": "ligado"}})
+            upd["consent.screen"] = True
+        if "consent_control" in data and existing.get("platform") != "browser":
+            upd["consent.control"] = bool(data["consent_control"])
+            existing.setdefault("consent", {})["control"] = upd["consent.control"]
+        await db.sessions.update_one({"id": existing["id"]}, {"$set": upd})
         await sio.emit("session:status", {"session_id": existing["id"], "connection_state": "ligado", "reconnected": True},
                        room=f"session:{existing['id']}")
         return {"ok": True, "session": existing, "resumed": True}
@@ -187,6 +192,7 @@ async def support_request(sid, data):
                 target, link_id = tech["id"], link["id"]
                 await db.technicianLinks.update_one({"id": link_id}, {"$inc": {"uses": 1}, "$set": {"last_used_at": iso()}})
     client_name = str(data.get("client_name") or "")[:60]
+    control = bool(data.get("consent_control")) and device.get("platform") != "browser"
     sess_id, req_id = new_id(), new_id()
     session = {
         "id": sess_id, "request_id": req_id, "device_id": did, "device_name": device.get("name"),
@@ -195,7 +201,7 @@ async def support_request(sid, data):
         "status": "pending", "created_at": iso(), "assigned_at": None, "started_at": None, "ended_at": None,
         "duration_s": 0, "privacy": False, "connection_state": "ligado", "resolution": data.get("screen") or "",
         "quality": {}, "consent": {"screen": bool(data.get("consent_screen")), "screen_at": iso() if data.get("consent_screen") else None,
-                                   "control": False, "control_at": None},
+                                   "control": control, "control_at": iso() if control else None},
         "operations": [{"at": iso(), "actor": "cliente", "text": "Pedido de assistência criado"}], "messages": [],
     }
     await db.sessions.insert_one(dict(session))

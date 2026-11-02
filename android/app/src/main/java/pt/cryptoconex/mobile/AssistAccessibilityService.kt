@@ -27,7 +27,10 @@ import org.json.JSONObject
 class AssistAccessibilityService : AccessibilityService() {
     private var overlay: LinearLayout? = null
 
-    override fun onServiceConnected() { instance = this }
+    override fun onServiceConnected() {
+        instance = this
+        if (Assist.inSession() && !Assist.state.value.control) Assist.setControl(true)
+    }
     override fun onUnbind(intent: android.content.Intent?): Boolean { instance = null; return super.onUnbind(intent) }
     override fun onDestroy() { instance = null; super.onDestroy() }
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {}
