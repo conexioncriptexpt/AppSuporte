@@ -33,6 +33,11 @@ Super Admin (owner), Técnico/Tutor, Cliente assistido (idoso / baixa literacia 
 - Sessions with device offline > 10 min auto-ended; deduplicated device socket events; toasts bottom-right.
 - Workflow: removed failing setup-android step; Windows release published even if Android fails.
 
+## Implemented (2026-11-02, iteration 6)
+- Instant assistance: clicking a device in the Consola ao Vivo or opening a session calls POST /api/sessions/{sid}/open (assign + activate). The Aceitar/Rejeitar/Atender eu steps are gone and the stream starts straight away.
+- Remote control is on by default from CONECTAR: Android (when Ajuda por toque is enabled; CONECTAR guides the user to enable it) and Windows send consent_control=true. The client can still switch it off or press TERMINAR.
+- Stream is fitted with object-contain (no zoom/crop); click coordinates account for letterboxing.
+
 ## Known limitations
 - Native apps not tested on physical devices; Android not compiled in this environment.
 - Android privacy overlay is also visible to the technician (Android captures overlays).

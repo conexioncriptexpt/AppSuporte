@@ -43,8 +43,8 @@ export const Stage = ({ v, zoom, control }) => {
         <video ref={video} autoPlay playsInline muted data-testid="crm-stream-video"
           onPointerDown={onDown} onPointerUp={onUp} onWheel={onWheel} onContextMenu={(e) => control && e.preventDefault()}
           onDoubleClick={(e) => { if (control) { const p = pos(e); v.cmd({ type: "double_click", x: p.x, y: p.y }); } }}
-          style={zoom === 1 ? { cursor: control ? "crosshair" : "default" } : { width: `${zoom * 100}%`, cursor: control ? "crosshair" : "default" }}
-          className={zoom === 1 ? "h-full w-full touch-none object-contain" : "mx-auto h-auto max-w-none touch-none"} />
+          style={{ width: `${zoom * 100}%`, height: `${zoom * 100}%`, cursor: control ? "crosshair" : "default" }}
+          className="mx-auto max-w-none touch-none object-contain" />
       ) : (
         <div className="flex h-full flex-col items-center justify-center gap-3 text-slate-500">
           {v.s?.status === "active" ? <Loader2 className="h-8 w-8 animate-spin text-lime-400" /> : null}

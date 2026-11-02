@@ -11,7 +11,8 @@ def test_public_config_assets_unavailable():
     assert "conexioncriptexpt/AppSuporte" in d["downloads"]["android"]
     assert d["downloads"]["android"].endswith("CryptoConex.apk")
     assert d["downloads"]["windows"].endswith("CryptoConexSetup.exe")
-    assert d["available"] == {"android": False, "windows": False}
+    # releases now published on GitHub (iter6): only assert shape
+    assert set(d["available"]) == {"android", "windows"} and all(isinstance(v, bool) for v in d["available"].values())
 
 
 def test_technician_cannot_manage_users(t1):

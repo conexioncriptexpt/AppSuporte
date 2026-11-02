@@ -37,7 +37,7 @@ export function useViewer(id) {
       try {
         const { data } = await http.post(`/sessions/${id}/open`);
         setS((p) => ({ ...p, ...data }));
-        requestOffer();
+        socket.emit("session:join", { session_id: id }, () => requestOffer());
       } catch (e) { toast.error(errMsg(e)); }
     })();
   }, [load, socket, id, requestOffer]);

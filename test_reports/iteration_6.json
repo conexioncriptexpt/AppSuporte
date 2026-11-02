@@ -1,0 +1,37 @@
+{
+  "summary": "Iteration 6: tested auto-open (POST /sessions/{sid}/open), consent_control on support:request, the remote:command relay, and the CRM Live Console and Viewer auto-activation and zoom. Backend: 7 of 8 new tests pass. Open on a pending session makes it active with started_at set, assigns the caller and sends session:started to the device. Open on an assigned session makes it active. Open on an active session returns 200 with started_at unchanged. Open on an ended session returns 400, an out-of-scope technician gets 404, and an unauthenticated call gets 401/403. A non-browser device sending consent_control=true gets consent.control=true; a browser device always gets false; a resumed session updates consent.control. remote:command is refused before open, works after open (relayed to the device room exactly once) and rejects unknown command types. FAILED: a link-targeted technician never receives webrtc:offer after auto-open (details in the RCA), so that technician sees no video until the page is reloaded. UI as admin: in the console, clicking a pending simulated Android device (consent_control=true) went straight to the Visualizador ao Vivo, the badge went from Pendente to Em curso, there were no Aceitar/Rejeitar/Atender eu buttons, all 9 console-nav buttons were enabled, and clicking Voltar delivered a remote:command {type:'back'} to the device. In the Viewer (/crm/atendimentos/{id}) the pending session auto-activated, there was no accept card, the toggle showed 'Controlo ativo' and was enabled, the control bar was visible, zoom went 100 -> 150 -> 125 -> Ajustar 100%, and Início worked. As technician t1 (link target) the console auto-activated and the nav buttons were enabled and sent commands, but the backend test proves video would never arrive. Video itself cannot be produced by the simulated device, so only UI states were checked.",
+  "backend_issues": {
+    "critical": [
+      {"endpoint": "POST /api/sessions/{sid}/open + socket session:join (useViewer.js)", "issue": "A link-targeted technician opening a PENDING session never joins the socket room session:{id}: session:join runs before /open and fails with 'Sem acesso a esta sessão', and nothing re-joins after /open succeeds. The device's webrtc:offer, ICE, session:status, chat and privacy events are relayed to the session room only, so the technician never gets the video. The watchdog keeps sending request-offer forever. A page reload works around it. Super admins are not affected.", "priority": "HIGH"}
+    ],
+    "minor": [
+      {"endpoint": "tests/test_iteration4_stale.py::test_stale_pending_ended_via_sessions", "issue": "Flaky under pytest-xdist (failed 1 of 2 runs, passed when run alone). Probably interference between parallel workers. This is a test-isolation problem, not an app bug."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "Viewer Stage zoom", "issue": "Zoom does not scale smoothly. At 100% the video is object-contain (fits the height, which is correct). Any other zoom value sets width = zoom*100% of the container, so for a portrait Android stream (1080x2400) 75% or 125% looks far LARGER than 100%. Zooming out from 100% therefore enlarges the image. Suggestion: scale from the fitted size (for example height = zoom * container height for portrait, or a CSS transform scale on the fitted video).", "selector": "[data-testid='crm-stream-video']", "priority": "MEDIUM"}
+    ],
+    "integration_issues": [
+      {"flow": "Technician (link target) auto-open in Consola/Viewer", "issue": "Same root cause as the backend critical issue: no video for technicians on pending link sessions until reload.", "affected_selectors": ["[data-testid='crm-stream-canvas']", "[data-testid='console-rtc-state']"]}
+    ],
+    "design_issues": []
+  },
+  "test_report_links": ["/app/backend/tests/test_iteration6_open_control.py", "/app/backend/tests/sim_android_ctrl.py", "/app/test_reports/pytest/pytest_iter6.xml", "/app/test_reports/pytest/pytest_iter6_full.xml"],
+  "action_items": [
+    "In useViewer.js, after http.post(`/sessions/${id}/open`) succeeds, emit session:join again and wait for the ack, then call requestOffer(). Alternatively, re-run join whenever s.technician_id becomes user.id. Without this, technicians who open link-targeted pending sessions get no video.",
+    "Rework Stage zoom so values below or above 100% scale from the fitted (object-contain) size and do not switch to width-based sizing."
+  ],
+  "critical_code_review_comments": [
+    "useViewer auto-open effect: r.current.opened is set before the POST; if /open fails (e.g. a network error), it is never retried. The toast shows, but the user has to reload.",
+    "open_session: a race between two staff opening the same pending session at the same moment. Both calls run _assign, and the second one evicts or transfers the first. Consider an atomic find_one_and_update on status=pending.",
+    "Viewer: the control toggle defaults to true even while canControl is false. That is harmless because Stage gets control && canControl, but the button label shows 'Controlo ativo' in a disabled state."
+  ],
+  "updated_files": ["/app/backend/tests/test_iteration6_open_control.py (new)", "/app/backend/tests/sim_android_ctrl.py (new helper)", "/app/backend/tests/test_iteration3_console.py (assets assertion updated: GitHub releases now exist, so available=true)"],
+  "success_rate": {"backend": "87.5% (7/8 new tests; legacy suites pass except the flaky stale test)", "frontend": "90% (admin flows fully OK; technician video path is broken by the backend/socket room issue)"},
+  "seed_data_creation": "Used the existing test_admin and test_tecnico1/2 accounts (re-seeded with seed_test_users.py). All TEST_ devices (TEST_it6_*, TEST_SimCtrl, TEST_Android_*) and their sessions were ended and deleted; the t1 link was revoked. The user's real emulator session was not touched.",
+  "retest_needed": true,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "After the fix, run `pytest backend/tests/test_iteration6_open_control.py -n0`; test_targeted_tech_receives_offer_after_open must pass. sim_android_ctrl.py usage: python sim_android_ctrl.py <seconds> <link_code or ''> <logfile>. It sends consent_control=true and logs all received events.",
+  "rca of the issue": "Repro: technician t1 creates a link, a device sends support:request with the link_code (the session is pending with target_technician_id=t1), and t1 opens it in the Console or Viewer. In useViewer the join effect emits session:join first, and realtime._access denies it because technician_id is null (only super_admin or technician_id==user is allowed). Then the open effect POSTs /open, which sets technician_id and makes the session active, and calls requestOffer. _relay accepts that call, so the device gets it, but the socket was never added to the session:{id} room. The device's webrtc:offer is sent to session:{id} with skip_sid, so t1 never receives it. Mitigation: re-emit session:join after a successful /open (frontend), or join the room in the request-offer handler when access is granted."
+}
