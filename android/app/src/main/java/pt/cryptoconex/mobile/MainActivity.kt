@@ -10,8 +10,6 @@ import android.os.Bundle
 import android.provider.Settings
 import android.view.Gravity
 import android.view.View
-import android.widget.Button
-import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
@@ -101,12 +99,8 @@ class MainActivity : AppCompatActivity() {
     private fun showPrivacyDialog(ask: Boolean) {
         if (privacyDialog != null) return
         val d = Dialog(this, android.R.style.Theme_Black_NoTitleBar_Fullscreen)
-        d.setContentView(LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER; setBackgroundColor(Color.BLACK); setPadding(48, 48, 48, 48)
-            addView(TextView(context).apply { text = getString(R.string.privacy_title); setTextColor(Color.WHITE); textSize = 30f; gravity = Gravity.CENTER })
-            if (ask) addView(TextView(context).apply { text = "O técnico pede para desligares este modo."; setTextColor(Color.GREEN); gravity = Gravity.CENTER })
-            addView(Button(context).apply { text = getString(R.string.privacy_off); setOnClickListener { Assist.disablePrivacy() } })
-            addView(Button(context).apply { text = getString(R.string.terminate); setOnClickListener { Assist.end(true) } })
+        d.setContentView(AssistAccessibilityService.privacyView(this).apply {
+            if (ask) addView(TextView(context).apply { text = "O técnico pede para desligares este modo: mantém o dedo no ecrã 3 segundos."; setTextColor(Color.GREEN); gravity = Gravity.CENTER })
         })
         d.setCancelable(false)
         d.show()

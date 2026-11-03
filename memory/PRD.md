@@ -38,6 +38,12 @@ Super Admin (owner), Técnico/Tutor, Cliente assistido (idoso / baixa literacia 
 - Remote control is on by default from CONECTAR: Android (when Ajuda por toque is enabled; CONECTAR guides the user to enable it) and Windows send consent_control=true. The client can still switch it off or press TERMINAR.
 - Stream is fitted with object-contain (no zoom/crop); click coordinates account for letterboxing.
 
+## Implemented (2026-11-02, iteration 7)
+- Android privacy screen has no buttons. The client leaves it by holding a finger on the screen for 3 s; the technician turns it on and off in the panel.
+- Android 14+: while privacy is on, the stream shows the real app windows (accessibility window screenshots, about 3 fps) instead of the dark screen. Technician gestures pass through the privacy screen.
+- Windows: "Desligar privacidade" button removed; the top bar with TERMINAR is hidden while privacy is on.
+- Not compiled here (no Android/.NET toolchain in this environment); compiled by GitHub Actions.
+
 ## Known limitations
 - Native apps not tested on physical devices; Android not compiled in this environment.
 - Android privacy overlay is also visible to the technician (Android captures overlays).

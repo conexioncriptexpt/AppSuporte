@@ -61,7 +61,7 @@ const Commands = ({ v, canControl }) => {
             <Btn data-testid="console-privacy-off-btn" onClick={() => v.emit("privacy:disable")}><Eye className="h-4 w-4" /> Desativar</Btn>
           </div>
         )}
-        <p className="mt-1 text-[11px] text-slate-500">O cliente vê «Ajuste Técnico — Aguarde...». No Windows e no navegador continua a ver o ecrã real; no Android o ecrã escuro também aparece na transmissão.</p>
+        <p className="mt-1 text-[11px] text-slate-500">Só o cliente vê «Ajuste Técnico — Aguarde...»; o técnico continua a ver o ecrã real no Windows, no navegador e no Android 14 ou superior. No Android 13 ou anterior o ecrã escuro também aparece na transmissão.</p>
       </div>
       <div>
         <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Coordenadas do clique (X, Y) · {w}x{h}</p>

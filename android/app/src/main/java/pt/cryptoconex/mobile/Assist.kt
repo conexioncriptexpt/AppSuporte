@@ -42,6 +42,10 @@ object Assist {
     private var pc: PeerConnection? = null
     private val pendingIce = mutableListOf<IceCandidate>()
     private var screen = ""
+    private var capW = 0
+    private var capH = 0
+    @Volatile private var privacyFeed = false
+    private var feedThread: Thread? = null
 
     private fun update(f: (State) -> State) { state.value = f(state.value) }
 
@@ -83,12 +87,18 @@ object Assist {
         val w = (dm.widthPixels * scale).roundToInt() and 1.inv()
         val h = (dm.heightPixels * scale).roundToInt() and 1.inv()
         screen = "${dm.widthPixels}x${dm.heightPixels}"
+        capW = w; capH = h
         val cap = ScreenCapturerAndroid(projection, object : MediaProjection.Callback() {
             override fun onStop() { end(true) }
         })
         helper = SurfaceTextureHelper.create("ScreenCapture", e.eglBaseContext)
         source = factory!!.createVideoSource(true)
-        cap.initialize(helper, ctx, source!!.capturerObserver)
+        val real = source!!.capturerObserver
+        cap.initialize(helper, ctx, object : CapturerObserver {
+            override fun onCapturerStarted(ok: Boolean) = real.onCapturerStarted(ok)
+            override fun onCapturerStopped() = real.onCapturerStopped()
+            override fun onFrameCaptured(f: VideoFrame) { if (!privacyFeed) real.onFrameCaptured(f) }
+        })
         cap.startCapture(w, h, 30)
         capturer = cap
         track = factory!!.createVideoTrack("screen", source!!)
@@ -131,8 +141,8 @@ object Assist {
             val tree = AssistAccessibilityService.instance?.dumpTree() ?: JSONObject().put("package", "serviço de acessibilidade desligado")
             s.emit("accessibility:tree", tree.put("session_id", sessionId))
         }
-        s.on("privacy:enabled") { update { it.copy(privacy = true, privacyAsk = false) }; AssistAccessibilityService.instance?.showPrivacy(true) }
-        s.on("privacy:disabled") { update { it.copy(privacy = false, privacyAsk = false) }; AssistAccessibilityService.instance?.showPrivacy(false) }
+        s.on("privacy:enabled") { update { it.copy(privacy = true, privacyAsk = false) }; AssistAccessibilityService.instance?.showPrivacy(true); startPrivacyFeed() }
+        s.on("privacy:disabled") { update { it.copy(privacy = false, privacyAsk = false) }; AssistAccessibilityService.instance?.showPrivacy(false); stopPrivacyFeed() }
         s.on("privacy:request-disable") { update { it.copy(privacyAsk = true) } }
         s.on("chat:message") { a ->
             val m = a[0] as JSONObject
@@ -226,7 +236,27 @@ object Assist {
 
     fun setControl(allowed: Boolean) { update { it.copy(control = allowed) }; sendConsent(allowed) }
 
+    /** While privacy is on (Android 14+), stream the app windows under the dark screen instead of the dark screen itself. */
+    private fun startPrivacyFeed() {
+        if (android.os.Build.VERSION.SDK_INT < 34 || feedThread != null || AssistAccessibilityService.instance == null) return
+        val obs = source?.capturerObserver ?: return
+        privacyFeed = true
+        feedThread = Thread {
+            Thread.sleep(300)
+            while (privacyFeed) {
+                val t = System.currentTimeMillis()
+                try {
+                    AssistAccessibilityService.instance?.windowFrame(capW, capH)?.let { if (privacyFeed) obs.onFrameCaptured(it); it.release() }
+                } catch (e: Exception) { Log.w(TAG, "privacy frame", e) }
+                Thread.sleep(maxOf(50L, 350L - (System.currentTimeMillis() - t)))
+            }
+        }.apply { isDaemon = true; start() }
+    }
+
+    private fun stopPrivacyFeed() { privacyFeed = false; feedThread = null }
+
     fun disablePrivacy() {
+        stopPrivacyFeed()
         socket?.emit("privacy:disable", JSONObject().put("session_id", sessionId))
         update { it.copy(privacy = false, privacyAsk = false) }
         AssistAccessibilityService.instance?.showPrivacy(false)
@@ -236,6 +266,7 @@ object Assist {
     fun end(notify: Boolean) {
         if (notify && sessionId != null) socket?.emit("session:end", JSONObject().put("session_id", sessionId))
         AssistAccessibilityService.instance?.showPrivacy(false)
+        stopPrivacyFeed()
         try { capturer?.stopCapture() } catch (_: Exception) {}
         capturer?.dispose(); capturer = null
         pc?.dispose(); pc = null

