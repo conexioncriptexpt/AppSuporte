@@ -44,6 +44,10 @@ Super Admin (owner), Técnico/Tutor, Cliente assistido (idoso / baixa literacia 
 - Windows: "Desligar privacidade" button removed; the top bar with TERMINAR is hidden while privacy is on.
 - Not compiled here (no Android/.NET toolchain in this environment); compiled by GitHub Actions.
 
+## Implemented (2026-11-03, iteration 8)
+- Remote control diagnostics: Android and Windows report why a command failed (Ajuda por toque off, permission off, Windows blocked input) through the new socket event remote:result; the CRM shows it as a toast. The Consola shows the reason when control is unavailable.
+- Android 13+/15: the onboarding explains "Permitir definições restritas" and adds an "Informações da app" button. Control turns on automatically when the user returns with Ajuda por toque enabled, and off when the service stops.
+
 ## Known limitations
 - Native apps not tested on physical devices; Android not compiled in this environment.
 - Android privacy overlay is also visible to the technician (Android captures overlays).

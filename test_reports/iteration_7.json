@@ -1,0 +1,23 @@
+{
+  "summary": "Iteration 7: tested the new remote:result socket event, remote:command consent (regression), /open and consent_control (regression), and the toasts and hints in the Live Console. Backend: 7 of 7 new tests pass, and all 8 iteration-6 tests pass, including test_targeted_tech_receives_offer_after_open (updated to re-join after /open, as useViewer.js now does). remote:result from the session's own device is relayed to the session room; the technician receives it with from='device'. The error is truncated to exactly 200 characters. It is relayed even while the session is pending. A user socket sending it gets ok:false. A different device sending it gets ok:false and nothing is relayed. remote:command with consent.control=true reaches the device room exactly once. With control=false it returns 'O cliente não autorizou o controlo' and nothing is relayed. Frontend, as admin: in the Consola ao Vivo, a simulated android device (control=true) answered every command with remote:result ok:false 'TEST erro'. Clicking console-nav-back showed a 'TEST erro' toast. A second click 0.5s later still delivered the command, and no second toast appeared (4s throttle works). An android session with control=false shows the 'Ajuda por toque' hint and the nav buttons are disabled. A windows session with control=false shows the 'rato e teclado' hint and the nav buttons are disabled. Native Android/Windows code was not compiled or tested, as instructed.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Consola ao Vivo device list", "issues": ["Long device names are truncated (e.g. 'TEST_it7_sim_an...'), so two devices of the same platform look identical. Consider a tooltip or showing client_name/model."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_iteration7_remote_result.py", "/app/backend/tests/sim_result_device.py", "/app/backend/tests/test_iteration6_open_control.py", "/app/test_reports/pytest/pytest_iter7.xml"],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "remote_result mutates and relays the whole client payload (any extra keys from the device are forwarded). Consider whitelisting {session_id, ok, error, type}.",
+    "The remote:result toast falls back to a generic message only when error is empty. Because the backend turns a missing error into '', the fallback works, but ok:true results are silently ignored (fine)."
+  ],
+  "updated_files": ["/app/backend/tests/test_iteration7_remote_result.py (new)", "/app/backend/tests/sim_result_device.py (new helper)", "/app/backend/tests/test_iteration6_open_control.py (targeted-tech test now re-joins after /open, mirroring the useViewer fix)"],
+  "success_rate": {"backend": "100% (15/15 across iteration 6 and 7 suites)", "frontend": "100%"},
+  "seed_data_creation": "Re-seeded test_admin/test_tecnico1/2 with seed_test_users.py (kept). Cleanup: deleted all 13 devices whose name AND install_id start with TEST_ (this iteration's and leftovers from earlier ones), plus their 13 sessions and 13 supportRequests (matched by device_id). No non-TEST data was touched.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "sim_result_device.py usage: python sim_result_device.py <secs> <platform> <control 1|0> <logfile>. It replies to every remote:command with remote:result ok:false 'TEST erro'. Run the backend suites with -n0. Clean up the TEST_ devices with a Mongo filter on name and install_id ^TEST_ (DELETE /api/devices returns 409 while a session is open)."
+}

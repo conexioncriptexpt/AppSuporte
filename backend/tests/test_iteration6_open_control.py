@@ -152,6 +152,8 @@ def test_targeted_tech_receives_offer_after_open(admin, t1):
         j = u.call("session:join", {"session_id": sid}, timeout=10)
         print("join before open:", j)
         assert t1.post(f"{API}/sessions/{sid}/open", timeout=20).status_code == 200
+        j2 = u.call("session:join", {"session_id": sid}, timeout=10)  # useViewer re-joins after /open
+        assert j2.get("ok") is not False, j2
         ro = u.call("webrtc:request-offer", {"session_id": sid}, timeout=10)
         assert ro["ok"] is True, ro
         time.sleep(1)
