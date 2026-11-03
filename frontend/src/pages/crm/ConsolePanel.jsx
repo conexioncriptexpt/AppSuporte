@@ -46,7 +46,7 @@ const Commands = ({ v, canControl }) => {
       <div>
         <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Navegação</p>
         <div className="grid grid-cols-3 gap-2">{nav.map(([id, l, I, fn]) => <NavBtn key={id} id={id} icon={I} label={l} onClick={fn} disabled={!canControl} />)}</div>
-        {s && !canControl && active && <p className="mt-2 text-xs text-slate-500">{s.platform === "browser" ? "Ligado pelo navegador: só visualização." : "A aguardar autorização de controlo do cliente."}</p>}
+        {s && !canControl && active && <p className="mt-2 text-xs text-slate-500">{s.platform === "browser" ? "Ligado pelo navegador: só visualização." : s.platform === "android" ? "Controlo indisponível: o cliente precisa de ativar a «Ajuda por toque» no telemóvel (a app mostra os passos ao carregar em CONECTAR)." : "Controlo indisponível: o cliente desligou a permissão de rato e teclado na app."}</p>}
       </div>
       <div>
         <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Modo de privacidade</p>

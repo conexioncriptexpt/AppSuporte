@@ -135,7 +135,13 @@ object Assist {
         s.on("webrtc:ice-candidate") { a -> onRemoteIce(a[0] as JSONObject) }
         s.on("remote:command") { a ->
             val cmd = (a[0] as JSONObject).optJSONObject("command") ?: return@on
-            if (state.value.control) AssistAccessibilityService.instance?.perform(cmd)
+            val svc = AssistAccessibilityService.instance
+            when {
+                svc == null -> report("A Ajuda por toque está desligada no telemóvel (Definições > Acessibilidade).")
+                !state.value.control -> report("O cliente desligou a permissão de toque.")
+                state.value.phase != Phase.ACTIVE -> report("A assistência ainda não está ativa no telemóvel.")
+                else -> try { svc.perform(cmd) } catch (e: Exception) { report("Erro no telemóvel: ${e.message}") }
+            }
         }
         s.on("accessibility:request") {
             val tree = AssistAccessibilityService.instance?.dumpTree() ?: JSONObject().put("package", "serviço de acessibilidade desligado")
@@ -230,6 +236,12 @@ object Assist {
     private fun sendConsent(control: Boolean) {
         val id = sessionId ?: return
         socket?.emit("consent:update", JSONObject().put("session_id", id).put("control", control))
+    }
+
+    /** Tells the technician why a command could not run. */
+    fun report(error: String) {
+        val id = sessionId ?: return
+        socket?.emit("remote:result", JSONObject().put("session_id", id).put("ok", false).put("error", error))
     }
 
     fun inSession() = state.value.phase == Phase.WAITING || state.value.phase == Phase.ACTIVE || state.value.phase == Phase.CONNECTING

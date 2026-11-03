@@ -60,6 +60,7 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         b.enableA11y.visibility = if (AssistAccessibilityService.isEnabled(this)) View.GONE else View.VISIBLE
+        if (AssistAccessibilityService.isEnabled(this) && Assist.inSession() && !Assist.state.value.control) Assist.setControl(true)
     }
 
     private fun startShare() {
@@ -69,11 +70,17 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun explainA11y(onSkip: (() -> Unit)? = null) {
+        val restricted = if (Build.VERSION.SDK_INT >= 33) "\n\nSe a opção aparecer bloqueada (\"Definição restrita\"): carrega em \"Informações da app\", depois no menu ⋮ (canto superior direito) e em \"Permitir definições restritas\". Depois volta a ativar a Ajuda por toque." else ""
         AlertDialog.Builder(this)
             .setTitle("Ajuda por toque")
-            .setMessage("Para o técnico poder tocar no ecrã por ti, ativa \"Ajuda por toque — Suporte Técnico\" nas definições de Acessibilidade (só é preciso uma vez). Depois volta aqui e carrega em CONECTAR.\n\nSó funciona durante a assistência e nunca escreve palavras-passe, PIN, cartões ou IBAN.")
+            .setMessage("Para o técnico poder tocar no ecrã por ti, ativa \"Ajuda por toque — Suporte Técnico\" nas definições de Acessibilidade (só é preciso uma vez). Depois volta aqui e carrega em CONECTAR.$restricted\n\nSó funciona durante a assistência e nunca escreve palavras-passe, PIN, cartões ou IBAN.")
             .setPositiveButton("Abrir definições") { _, _ -> startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }
             .setNegativeButton(if (onSkip != null) "Só mostrar o ecrã" else "Agora não") { _, _ -> onSkip?.invoke() }
+            .apply {
+                if (Build.VERSION.SDK_INT >= 33) setNeutralButton("Informações da app") { _, _ ->
+                    startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, android.net.Uri.parse("package:$packageName")))
+                }
+            }
             .show()
     }
 

@@ -45,8 +45,9 @@ class AssistAccessibilityService : AccessibilityService() {
         instance = this
         if (Assist.inSession() && !Assist.state.value.control) Assist.setControl(true)
     }
-    override fun onUnbind(intent: android.content.Intent?): Boolean { instance = null; return super.onUnbind(intent) }
-    override fun onDestroy() { instance = null; super.onDestroy() }
+    override fun onUnbind(intent: android.content.Intent?): Boolean { instance = null; lost(); return super.onUnbind(intent) }
+    override fun onDestroy() { instance = null; lost(); super.onDestroy() }
+    private fun lost() { if (Assist.inSession() && Assist.state.value.control) Assist.setControl(false) }
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {}
     override fun onInterrupt() {}
 
@@ -70,7 +71,10 @@ class AssistAccessibilityService : AccessibilityService() {
                 override fun onCompleted(g: GestureDescription?) { main.postDelayed({ setOverlayTouchable(true) }, 80) }
                 override fun onCancelled(g: GestureDescription?) { main.postDelayed({ setOverlayTouchable(true) }, 80) }
             }
-            if (!dispatchGesture(GestureDescription.Builder().addStroke(GestureDescription.StrokeDescription(path, 0, ms)).build(), done, main)) setOverlayTouchable(true)
+            if (!dispatchGesture(GestureDescription.Builder().addStroke(GestureDescription.StrokeDescription(path, 0, ms)).build(), done, main)) {
+                setOverlayTouchable(true)
+                Assist.report("O Android recusou o toque. Desliga e volta a ligar a Ajuda por toque nas definições de Acessibilidade.")
+            }
         }
     }
 
@@ -131,7 +135,6 @@ class AssistAccessibilityService : AccessibilityService() {
     }
 
     fun perform(cmd: JSONObject) {
-        if (Assist.state.value.phase != Assist.Phase.ACTIVE) return
         val (w, h) = size()
         val x = (cmd.optDouble("x", 0.5) * w).toFloat()
         val y = (cmd.optDouble("y", 0.5) * h).toFloat()

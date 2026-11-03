@@ -92,6 +92,11 @@ export function useViewer(id) {
     if (d.by === "device") toast.info("O cliente desativou o modo de privacidade");
   });
   useSocketEvent("accessibility:tree", (d) => d.session_id === id && setTree(d));
+  useSocketEvent("remote:result", (d) => {
+    if (d.session_id !== id || d.ok || Date.now() - (r.current.lastErr || 0) < 4000) return;
+    r.current.lastErr = Date.now();
+    toast.error(d.error || "O aparelho não executou o comando");
+  });
   useSocketEvent("session:ended", (d) => {
     if (d.session_id !== id) return;
     r.current.pc?.close(); r.current.pc = null; setStream(null); setRtc("terminada");

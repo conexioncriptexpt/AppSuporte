@@ -23,8 +23,16 @@ public static class InputController
     [StructLayout(LayoutKind.Sequential)]
     private struct KEYBDINPUT { public ushort wVk, wScan; public uint dwFlags, time; public nint dwExtraInfo; }
 
-    [DllImport("user32.dll", SetLastError = true)] private static extern uint SendInput(uint n, INPUT[] inputs, int size);
+    [DllImport("user32.dll", EntryPoint = "SendInput", SetLastError = true)] private static extern uint SendInputNative(uint n, INPUT[] inputs, int size);
     [DllImport("user32.dll")] private static extern bool SetCursorPos(int x, int y);
+    [ThreadStatic] private static bool _rejected;
+
+    private static uint SendInput(uint n, INPUT[] inputs, int size)
+    {
+        var sent = SendInputNative(n, inputs, size);
+        if (sent == 0) _rejected = true;
+        return sent;
+    }
 
     private const uint INPUT_MOUSE = 0, INPUT_KEYBOARD = 1;
     private const uint LEFTDOWN = 0x02, LEFTUP = 0x04, RIGHTDOWN = 0x08, RIGHTUP = 0x10, WHEEL = 0x0800;
@@ -71,7 +79,16 @@ public static class InputController
         catch { return false; }
     }
 
-    public static void Execute(JsonElement cmd)
+    /// <summary>Runs one command; returns an error message for the technician, or null on success.</summary>
+    public static string? Execute(JsonElement cmd)
+    {
+        _rejected = false;
+        try { Run(cmd); }
+        catch (Exception e) { return $"Erro no computador: {e.Message}"; }
+        return _rejected ? "O Windows bloqueou o comando (janela de administrador ou ecrã de segurança). Abra a app Crypto Conex como administrador." : null;
+    }
+
+    private static void Run(JsonElement cmd)
     {
         var type = cmd.TryGetProperty("type", out var t) ? t.GetString() : "";
         switch (type)

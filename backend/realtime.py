@@ -316,6 +316,16 @@ async def remote_command(sid, data):
     return {"ok": True}
 
 
+@sio.on("remote:result")
+async def remote_result(sid, data):
+    info = SIDS.get(sid)
+    if not info or info["kind"] != "device":
+        return {"ok": False}
+    data = data or {}
+    data["error"] = str(data.get("error") or "")[:200]
+    return await _relay(sid, "remote:result", data, require_active=False)
+
+
 @sio.on("accessibility:request")
 async def accessibility_request(sid, data):
     data = data or {}

@@ -106,8 +106,10 @@ public sealed class AssistClient : IDisposable
         _socket.On("webrtc:ice-candidate", r => OnRemoteIce(r.GetValue<JsonElement>(0)));
         _socket.On("remote:command", r =>
         {
-            if (!ControlAllowed || Phase != Phase.Active) return;
-            InputController.Execute(r.GetValue<JsonElement>(0).GetProperty("command"));
+            string? err = !ControlAllowed ? "O cliente desligou a permissão de rato e teclado."
+                : Phase != Phase.Active ? "A assistência ainda não está ativa no computador."
+                : InputController.Execute(r.GetValue<JsonElement>(0).GetProperty("command"));
+            if (err != null) _ = _socket.EmitAsync("remote:result", new { session_id = _sessionId, ok = false, error = err });
         });
         _socket.On("privacy:enabled", _ => { Privacy = true; Notify(); });
         _socket.On("privacy:disabled", _ => { Privacy = false; Notify(); });
